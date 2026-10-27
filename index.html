@@ -1,0 +1,5201 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Buildmart Self-Checkout — Kiosk Prototype</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- Used only by the "sketch" color theme below, to give the whole kiosk a
+
+     hand-drawn look. Loaded unconditionally (cheap, cached) rather than
+
+     injected dynamically on theme switch. -->
+
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+<style>
+
+/* ============================================================
+
+   BRANDSYNC-DERIVED DESIGN TOKENS
+
+   Resolved from the Brandsync design system (dark surface theme).
+
+   Text/background pairs below were verified to meet WCAG 2.2 AA
+
+   contrast (>=4.5:1 for text, >=3:1 for UI component borders).
+
+   ============================================================ */
+
+:root {
+
+  color-scheme: dark;
+
+  /* Surfaces */
+
+  --bg-base: #191c22;
+
+  --bg-raised: #21262e;
+
+  --bg-hover: #363c47;
+
+  --bg-pressed: #4d535f;
+
+  --bg-overlay: rgba(9, 11, 14, 0.72);
+
+ 
+
+  /* Borders (>=3:1 against both surfaces) */
+
+  --border-default: #6d7585;
+
+  --border-strong: #828998;
+
+  --border-subtle: #4d535f;
+
+ 
+
+  /* Text */
+
+  --text-default: #ffffff;
+
+  --text-secondary: #c2c7d3;
+
+  --text-muted: #a0a5b4;
+
+  --text-on-primary: #ffffff;
+
+  --text-on-light: #14161a;
+
+  /* Used only for small accent-colored text on a card (e.g. product category
+
+     labels), kept separate from --primary-hover so darkening that token for
+
+     white-button-text contrast doesn't also darken this text to the point of
+
+     being unreadable against the dark theme's own dark card background. */
+
+  --text-accent: #7aa6f2;
+
+ 
+
+  /* Brand / primary. White text requires a darker, more saturated blue than
+
+     the old #3e88ef (which was tuned for black text) — #1d4ed8 gives white
+
+     text ~6.7:1 contrast (old light-blue hover shade only gave white text
+
+     ~2.3:1, so the hover/pressed shades below were darkened to match). */
+
+  --primary: #1d4ed8;
+
+  --primary-hover: #1e40af;
+
+  --primary-pressed: #aec7f8;
+
+  --primary-container: #001b3e;
+
+  --focus-ring: #7aa6f2;
+
+ 
+
+  /* Status */
+
+  --success-text: #6bb491;
+
+  --success-surface: #11714e;
+
+  --error-text: #ff807a;
+
+  --error-surface: #b92f31;
+
+  --warning-bg: #f1bd51;
+
+ 
+
+  /* Type scale (Brandsync font-size tokens) */
+
+  --fs-2xs: 0.625rem;
+
+  --fs-xs: 0.75rem;
+
+  --fs-sm: 0.875rem;
+
+  --fs-md: 1rem;
+
+  --fs-lg: 1.125rem;
+
+  --fs-xl: 1.25rem;
+
+  --fs-2xl: 1.5rem;
+
+  --fs-3xl: 1.75rem;
+
+  --fs-4xl: 2rem;
+
+  --fs-5xl: 2.5rem;
+
+ 
+
+  /* Spacing (Brandsync spacing scale) */
+
+  --sp-50: 4px;
+
+  --sp-75: 6px;
+
+  --sp-100: 8px;
+
+  --sp-150: 12px;
+
+  --sp-200: 16px;
+
+  --sp-250: 20px;
+
+  --sp-300: 24px;
+
+  --sp-400: 32px;
+
+  --sp-500: 40px;
+
+  --sp-600: 48px;
+
+ 
+
+  --radius-sm: 8px;
+
+  --radius-md: 12px;
+
+  --radius-lg: 16px;
+
+  --radius-full: 999px;
+
+ 
+
+  --tap-min: 48px;
+
+  --tap-hero: 64px;
+
+ 
+
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.3);
+
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.45);
+
+ 
+
+  /* Page background outside the kiosk frame (desktop preview letterboxing) */
+
+  --page-bg: #0c0d10;
+
+ 
+
+  /* Dropdown arrow baked into .lang-select's background-image data URI —
+
+     light stroke for the dark theme, overridden to a dark stroke below for
+
+     the light theme. */
+
+  --select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='%23e6e8ee' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+
+}
+
+ 
+
+/* ============================================================
+
+   LIGHT THEME
+
+   Toggled via the sun/moon button in the help-bar, which sets
+
+   data-theme="light" on <html>. Brand colors (primary, success,
+
+   error, warning) stay the same in both themes — only surfaces,
+
+   borders and text swap for contrast against the lighter background,
+
+   same AA-verified approach as the dark tokens above.
+
+   ============================================================ */
+
+:root[data-theme="light"] {
+
+  color-scheme: light;
+
+  --page-bg: #e4e7ec;
+
+ 
+
+  --bg-base: #f4f5f7;
+
+  --bg-raised: #ffffff;
+
+  --bg-hover: #e9ebef;
+
+  --bg-pressed: #d7dbe2;
+
+  --bg-overlay: rgba(30, 33, 38, 0.45);
+
+ 
+
+  /* Darker than a typical light-theme border so outlined buttons, inputs
+
+     and chips still clear the 3:1 AA contrast required for UI component
+
+     boundaries (verified: #7d8492 on white = 3.76:1, on --bg-base = 3.45:1). */
+
+  --border-default: #7d8492;
+
+  --border-strong: #5f6675;
+
+  --border-subtle: #dde1e7;
+
+ 
+
+  --text-default: #14161a;
+
+  --text-secondary: #42485a;
+
+  --text-muted: #666d7d;
+
+ 
+
+  --primary-container: #dce8fb;
+
+  /* Reuses --primary itself: #1d4ed8 on this theme's white/light card
+
+     backgrounds gives ~6.7:1 contrast, same verification as the button text. */
+
+  --text-accent: #1d4ed8;
+
+ 
+
+  --shadow-md: 0 4px 16px rgba(20,22,26,0.12), 0 1px 3px rgba(20,22,26,0.10);
+
+  --shadow-lg: 0 12px 32px rgba(20,22,26,0.16);
+
+ 
+
+  --select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='%2314161a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+
+}
+
+ 
+
+/* ============================================================
+
+   COLOR THEME: ORANGE
+
+   Sourced from orange-theme.json (Brandsync "orange" palette). --primary /
+
+   --primary-hover reuse that file's "light" semantic shades (600 / 700)
+
+   rather than the "dark" shades (400 / 300) because those are the pair
+
+   verified to give white button text >=4.5:1 AA on both surface themes
+
+   (600: 6.0:1, 700: 7.8:1 — the 400 shade only reaches ~3.5:1, which is
+
+   AA-large-text only). Combined with the existing light/dark[data-theme]
+
+   attribute, so an orange kiosk can still be toggled light or dark.
+
+   Selected via the theme picker on the idle screen (setColorTheme()). */
+
+:root[data-color-theme="orange"] {
+
+  --primary: #a24907;
+
+  --primary-hover: #873d07;
+
+  --primary-pressed: #f7b997;
+
+  --primary-container: #301302;
+
+  --text-accent: #f08c50;
+
+  --focus-ring: #f08c50;
+
+}
+
+:root[data-color-theme="orange"][data-theme="light"] {
+
+  --primary-container: #faeee9;
+
+  /* Reuses --primary itself, same verified ~6:1 contrast approach as the
+
+     blue theme's light-mode --text-accent. */
+
+  --text-accent: #a24907;
+
+}
+
+ 
+
+/* ============================================================
+
+   COLOR THEME: SKETCH ("hand-drawn", greyscale)
+
+   Unlike blue/orange, this isn't sourced from a brand palette — it's a
+
+   novelty/demo theme: desaturates the whole kiosk with a CSS filter
+
+   (simplest reliable way to force true greyscale, including photos/emoji/
+
+   the green success icon, without re-deriving every token by hand), swaps
+
+   in a handwriting webfont, and gives cards/buttons "wobbly" blob corners
+
+   + an offset pencil-stroke shadow instead of clean rounded corners.
+
+   Grayscale tokens below are still needed for things the filter can't
+
+   reach cleanly (e.g. form focus rings drawn by the browser). */
+
+:root[data-color-theme="sketch"] {
+
+  --primary: #333333;
+
+  --primary-hover: #000000;
+
+  --primary-pressed: #8a8a8a;
+
+  --primary-container: #dcdcdc;
+
+  --text-accent: #4d4d4d;
+
+  --focus-ring: #000000;
+
+}
+
+:root[data-color-theme="sketch"][data-theme="light"] {
+
+  --primary-container: #e8e8e8;
+
+  --text-accent: #333333;
+
+}
+
+:root[data-color-theme="sketch"] .kiosk-frame {
+
+  font-family: "Patrick Hand", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+
+}
+
+/* Grayscale is applied per top-level region instead of once on the whole
+
+   .kiosk-frame, deliberately leaving #view-idle out: a CSS filter can't be
+
+   "undone" by a descendant, so if the idle screen were inside a greyscale
+
+   ancestor, the color-theme dropdown's own styling (and anything else
+
+   idle-specific) would get forced grey too. Nothing on the idle screen
+
+   needs desaturating (its only color comes from tokens that are already
+
+   grey in this theme), so excluding the whole view is safe. */
+
+:root[data-color-theme="sketch"] .kiosk-frame > .help-bar,
+
+:root[data-color-theme="sketch"] .kiosk-frame > .bs-snackbar,
+
+:root[data-color-theme="sketch"] .kiosk-frame > main > .view:not(#view-idle),
+
+:root[data-color-theme="sketch"] .kiosk-frame > .bs-dialog-overlay {
+
+  filter: grayscale(1) contrast(0.96);
+
+}
+
+/* Hand-drawn "blob" corners + a doubled offset shadow (classic sketch-UI
+
+   trick: solid border for the shape, offset flat shadow standing in for a
+
+   second, slightly-misaligned pencil stroke) on every card/button/input
+
+   surface, including .lang-select (shared by the help-bar's language
+
+   dropdown and the idle screen's color-theme dropdown). Excludes
+
+   .idle-start, which stays circular (see below). */
+
+:root[data-color-theme="sketch"] .bs-btn,
+
+:root[data-color-theme="sketch"] .bs-chip,
+
+:root[data-color-theme="sketch"] .prod-card,
+
+:root[data-color-theme="sketch"] .registered-list,
+
+:root[data-color-theme="sketch"] .summary-card,
+
+:root[data-color-theme="sketch"] .bs-dialog,
+
+:root[data-color-theme="sketch"] .pay-option,
+
+:root[data-color-theme="sketch"] .browse-actions,
+
+:root[data-color-theme="sketch"] .demo-controls,
+
+:root[data-color-theme="sketch"] .cog-btn,
+
+:root[data-color-theme="sketch"] .lang-select,
+
+:root[data-color-theme="sketch"] .qty-btn {
+
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px !important;
+
+  box-shadow: 2px 3px 0 var(--border-strong);
+
+}
+
+/* Every bordered card/button/control above also gets the pencil-wobble
+
+   filter applied directly (cheap enough at this count — never more than a
+
+   couple dozen on screen at once since only one view is visible at a
+
+   time), so their solid borders read as a shaky hand-drawn line instead of
+
+   a ruler-straight one. .prod-card and .bs-chip are excluded: the product
+
+   grid can render up to 56 cards at once, and per-element SVG filters at
+
+   that count noticeably lag — they keep the blob corners above, just
+
+   without the extra wobble pass. */
+
+:root[data-color-theme="sketch"] .bs-btn,
+
+:root[data-color-theme="sketch"] .registered-list,
+
+:root[data-color-theme="sketch"] .summary-card,
+
+:root[data-color-theme="sketch"] .bs-dialog,
+
+:root[data-color-theme="sketch"] .pay-option,
+
+:root[data-color-theme="sketch"] .browse-actions,
+
+:root[data-color-theme="sketch"] .demo-controls,
+
+:root[data-color-theme="sketch"] .cog-btn,
+
+:root[data-color-theme="sketch"] .lang-select,
+
+:root[data-color-theme="sketch"] .qty-btn,
+
+:root[data-color-theme="sketch"] .idle-start {
+
+  filter: url(#pencilWobble);
+
+}
+
+/* .idle-start's box-shadow is driven entirely by the @keyframes pulse
+
+   animation (see below), which would stomp on any box-shadow set here — so
+
+   only its border-style changes; the glow color itself comes from
+
+   IDLE_SCREEN_PRESETS.sketch in the script. */
+
+:root[data-color-theme="sketch"] .idle-start {
+
+  border: 3px dashed var(--text-on-primary);
+
+}
+
+ 
+
+/* Plain single-edge divider lines (not a whole bordered card) — these sit
+
+   inside containers that have their own already-filtered children (e.g.
+
+   .help-bar holds .bs-btn and .lang-select), so filtering the container
+
+   itself would double-wobble those children. Instead the real border is
+
+   swapped for a filtered ::after line, independent of the container's own
+
+   content. */
+
+:root[data-color-theme="sketch"] .help-bar,
+
+:root[data-color-theme="sketch"] .items-footer,
+
+:root[data-color-theme="sketch"] .cart-line,
+
+:root[data-color-theme="sketch"] .cart-summary-row {
+
+  position: relative;
+
+}
+
+:root[data-color-theme="sketch"] .help-bar { border-bottom-color: transparent; }
+
+:root[data-color-theme="sketch"] .items-footer { border-top-color: transparent; }
+
+:root[data-color-theme="sketch"] .cart-line { border-bottom-color: transparent; }
+
+:root[data-color-theme="sketch"] .cart-summary-row { border-top-color: transparent; }
+
+:root[data-color-theme="sketch"] .help-bar::after,
+
+:root[data-color-theme="sketch"] .items-footer::after,
+
+:root[data-color-theme="sketch"] .cart-line::after,
+
+:root[data-color-theme="sketch"] .cart-summary-row::after {
+
+  content: ""; position: absolute; left: 0; right: 0; height: 2px;
+
+  background: var(--border-strong); filter: url(#pencilWobble); pointer-events: none;
+
+}
+
+:root[data-color-theme="sketch"] .help-bar::after,
+
+:root[data-color-theme="sketch"] .cart-line::after { bottom: 0; }
+
+:root[data-color-theme="sketch"] .items-footer::after,
+
+:root[data-color-theme="sketch"] .cart-summary-row::after { top: 0; }
+
+:root[data-color-theme="sketch"] .cart-line:last-child::after { display: none; }
+
+ 
+
+@media (prefers-reduced-motion: reduce) {
+
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+
+}
+
+ 
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+
+  background: var(--page-bg);
+
+  color: var(--text-default);
+
+  font-size: var(--fs-md);
+
+  line-height: 1.5;
+
+  -webkit-font-smoothing: antialiased;
+
+}
+
+h1, h2, h3, h4, p { margin: 0; }
+
+button { font-family: inherit; }
+
+img, svg { display: block; }
+
+ 
+
+.sr-only {
+
+  position: absolute;
+
+  width: 1px; height: 1px;
+
+  padding: 0; margin: -1px;
+
+  overflow: hidden;
+
+  clip: rect(0,0,0,0);
+
+  white-space: nowrap;
+
+  border: 0;
+
+}
+
+ 
+
+/* Visible focus ring everywhere, matching Brandsync focus pattern */
+
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible,
+
+[tabindex]:focus-visible, .prod-card:focus-visible {
+
+  outline: 3px solid var(--focus-ring);
+
+  outline-offset: 2px;
+
+  border-radius: var(--radius-sm);
+
+}
+
+ 
+
+/* ============================================================
+
+   KIOSK FRAME — represents the physical portrait touchscreen.
+
+   Full-bleed on real device widths; framed/centered for preview
+
+   on wider desktop viewports.
+
+   ============================================================ */
+
+.kiosk-frame {
+
+  width: 100%;
+
+  min-height: 100vh;
+
+  margin: 0 auto;
+
+  background: var(--bg-base);
+
+  display: flex;
+
+  flex-direction: column;
+
+  position: relative;
+
+  overflow: hidden;
+
+}
+
+@media (min-width: 640px) {
+
+  body { padding: var(--sp-400) var(--sp-200); }
+
+  .kiosk-frame {
+
+    max-width: 480px;
+
+    min-height: min(920px, calc(100vh - 64px));
+
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-lg);
+
+    border: 1px solid var(--border-subtle);
+
+  }
+
+}
+
+ 
+
+ 
+
+/* Persistent bar across every screen: Cancel order on the left (only
+
+   visible on items/payment), language switcher + Call for help grouped
+
+   together on the right. */
+
+.help-bar {
+
+  /* z-index (not just position:relative) so this bar and its "Help
+
+     requested" toast reliably stack above the view content below it —
+
+     #view-idle also became position:relative (for its color-theme
+
+     dropdown), and without an explicit z-index here the two were tied at
+
+     the same auto stacking level, leaving the toast's visibility to
+
+     depend on DOM order instead of being guaranteed on top. */
+
+  position: relative;
+
+  z-index: 20;
+
+  display: flex; justify-content: space-between; align-items: center;
+
+  padding: var(--sp-150) var(--sp-200);
+
+  gap: var(--sp-150);
+
+  background: var(--bg-raised); border-bottom: 1px solid var(--border-subtle);
+
+}
+
+.help-bar[hidden] { display: none; }
+
+.help-bar-left { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-100); }
+
+.help-bar-right { display: flex; align-items: center; gap: var(--sp-150); margin-left: auto; }
+
+/* "Help requested" confirmation: anchored just under the help-bar, flush
+
+   with the right edge of the Call for help button, instead of the shared
+
+   bottom-of-screen snackbar other messages use. */
+
+.help-requested-toast {
+
+  position: absolute; top: 100%; right: var(--sp-200); margin-top: var(--sp-100);
+
+  max-width: min(360px, calc(100% - var(--sp-400)));
+
+  display: inline-flex; align-items: center; gap: var(--sp-100);
+
+  padding: var(--sp-150) var(--sp-200); border-radius: var(--radius-md);
+
+  background: var(--bg-raised); border: 1px solid var(--border-default);
+
+  color: var(--text-default); font-size: var(--fs-sm); font-weight: 600;
+
+  box-shadow: var(--shadow-md); z-index: 1100;
+
+}
+
+.help-requested-toast[hidden] { display: none; }
+
+.help-requested-toast-text { flex: 1; }
+
+.help-requested-toast-close {
+
+  flex-shrink: 0; width: 28px; height: 28px; padding: 0;
+
+  display: flex; align-items: center; justify-content: center;
+
+  background: transparent; border: none; border-radius: var(--radius-sm);
+
+  color: var(--text-secondary); font-size: var(--fs-md); cursor: pointer;
+
+}
+
+.help-requested-toast-close:hover { background: var(--bg-hover); color: var(--text-default); }
+
+.help-requested-toast-close:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+
+.lang-select {
+
+  /* Sized to match .bs-btn.small.bs-btn-outline exactly (same min-height,
+
+     vertical padding, border-radius and font-size) so the two controls
+
+     grouped in the help-bar are visually the same height. */
+
+  min-height: 40px;
+
+  padding: var(--sp-100) var(--sp-400) var(--sp-100) var(--sp-150);
+
+  border-radius: var(--radius-md);
+
+  border: 2px solid var(--border-default);
+
+  background: transparent;
+
+  color: var(--text-default);
+
+  font-size: var(--fs-sm);
+
+  font-weight: 600;
+
+  font-family: inherit;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  box-sizing: border-box;
+
+  /* Native select styling varies a lot across browsers (the default arrow
+
+     ignores our padding and crowds the text) — draw our own arrow instead
+
+     and give it fixed, predictable spacing on the right. */
+
+  appearance: none;
+
+  -webkit-appearance: none;
+
+  -moz-appearance: none;
+
+  background-image: var(--select-arrow);
+
+  background-repeat: no-repeat;
+
+  background-position: right var(--sp-150) center;
+
+  background-size: 16px 16px;
+
+}
+
+.lang-select:hover { border-color: var(--border-strong); background-color: var(--bg-hover); }
+
+.lang-select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+
+.lang-select::-ms-expand { display: none; }
+
+ 
+
+/* Buttons (Brandsync bs-btn pattern) */
+
+.bs-btn {
+
+  font-weight: 600;
+
+  font-size: var(--fs-md);
+
+  border-radius: var(--radius-md);
+
+  border: none;
+
+  cursor: pointer;
+
+  padding: var(--sp-150) var(--sp-300);
+
+  min-height: var(--tap-min);
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: var(--sp-100);
+
+  transition: background-color .15s ease, transform .1s ease, border-color .15s ease;
+
+  line-height: 1.2;
+
+}
+
+.bs-btn[hidden] { display: none; }
+
+.bs-btn:active { transform: scale(0.98); }
+
+.bs-btn-primary { background: var(--primary); color: var(--text-on-primary); }
+
+.bs-btn-primary:hover { background: var(--primary-hover); }
+
+.bs-btn-primary:disabled { background: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; }
+
+.bs-btn-outline { background: transparent; color: var(--text-default); border: 2px solid var(--border-default); }
+
+.bs-btn-outline:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+
+.bs-btn-ghost { background: transparent; color: var(--text-secondary); border: none; padding: var(--sp-100) var(--sp-200); }
+
+.bs-btn-ghost:hover { background: var(--bg-hover); color: var(--text-default); }
+
+.bs-btn-destructive { background: var(--error-surface); color: #fff; }
+
+.bs-btn-destructive:hover { background: #98232a; }
+
+.bs-btn.small { min-height: 40px; padding: var(--sp-100) var(--sp-200); font-size: var(--fs-sm); }
+
+.bs-btn.block { width: 100%; }
+
+.bs-btn.hero { min-height: var(--tap-hero); font-size: var(--fs-xl); border-radius: var(--radius-lg); }
+
+ 
+
+/* Views */
+
+main { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+.view { flex: 1; display: flex; flex-direction: column; padding: var(--sp-300) var(--sp-200); gap: var(--sp-300); overflow-y: auto; }
+
+.view[hidden] { display: none; }
+
+.view-title { font-size: var(--fs-2xl); font-weight: 700; }
+
+.view-subtitle { color: var(--text-secondary); font-size: var(--fs-md); }
+
+ 
+
+/* ---------- Idle ---------- */
+
+/* Configurable via IDLE_SCREEN_PRESETS in the script below. Every color
+
+   here reads from a --idle-* custom property with the normal blue brand
+
+   as fallback, and those --idle-* properties are only ever set on
+
+   #view-idle itself — so re-theming the idle screen can never leak into
+
+   Login's shared "Start scanning" button or the rest of the kiosk. */
+
+#view-idle {
+
+  position: relative;
+
+  justify-content: space-between; align-items: center; text-align: center;
+
+  padding: var(--sp-500) var(--sp-300);
+
+  background: radial-gradient(circle at 50% 0%, var(--idle-bg-tint, #1c2130) 0%, var(--bg-base) 65%);
+
+}
+
+.idle-brand { display: flex; flex-direction: column; align-items: center; gap: var(--sp-150); margin-top: var(--sp-400); }
+
+.idle-title { font-size: var(--fs-4xl); font-weight: 800; letter-spacing: -0.02em; }
+
+.idle-tagline { color: var(--text-secondary); font-size: var(--fs-lg); max-width: 320px; }
+
+.idle-start {
+
+  width: 220px; height: 220px; border-radius: 50%;
+
+  background: var(--idle-accent, var(--primary)); color: var(--text-on-primary);
+
+  border: none; cursor: pointer;
+
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-100);
+
+  font-size: var(--fs-xl); font-weight: 700;
+
+  box-shadow: 0 0 0 8px var(--idle-glow-strong, rgba(62,136,239,0.15)), var(--shadow-lg);
+
+  animation: pulse 2.4s ease-in-out infinite;
+
+}
+
+.idle-start:hover { background: var(--idle-accent-hover, var(--primary-hover)); }
+
+@keyframes pulse {
+
+  0%,100% { box-shadow: 0 0 0 8px var(--idle-glow-strong, rgba(62,136,239,0.15)), var(--shadow-lg); }
+
+  50% { box-shadow: 0 0 0 16px var(--idle-glow-soft, rgba(62,136,239,0.08)), var(--shadow-lg); }
+
+}
+
+.idle-footer { color: var(--text-muted); font-size: var(--fs-sm); margin-bottom: var(--sp-200); }
+
+ 
+
+/* Color theme dropdown (idle screen only) — switches setColorTheme()'s
+
+   global --primary/--text-accent/etc. tokens, independent of the light/
+
+   dark surface toggle. Pinned to the view's own lower-left corner rather
+
+   than sitting in the normal flex flow, so it reads as a quiet utility
+
+   control tucked out of the way of the "Touch to start" circle. */
+
+.idle-theme-select {
+
+  position: absolute; left: var(--sp-200); bottom: var(--sp-200);
+
+}
+
+ 
+
+/* Small uppercase label used above a secondary action group (e.g. the
+
+   "can't scan it" fallback) so it reads as its own organized section rather
+
+   than a loose pile of buttons. */
+
+.ia-section-label { font-size: var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+
+ 
+
+/* ---------- Form fields (Brandsync bs-field, per the wrapper class used in
+
+   the official Select component example) ---------- */
+
+.bs-field { display: flex; flex-direction: column; gap: var(--sp-75); }
+
+.bs-field label { font-weight: 600; font-size: var(--fs-sm); }
+
+.bs-field input {
+
+  min-height: var(--tap-min);
+
+  border-radius: var(--radius-sm);
+
+  border: 2px solid var(--border-default);
+
+  background: var(--bg-base);
+
+  color: var(--text-default);
+
+  padding: var(--sp-100) var(--sp-150);
+
+  font-size: var(--fs-md);
+
+}
+
+.bs-field input::placeholder { color: var(--text-muted); }
+
+.bs-field input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; border-color: var(--primary); }
+
+.bs-field .field-desc { font-size: var(--fs-xs); color: var(--text-muted); }
+
+.bs-field.has-error input { border-color: var(--error-text); }
+
+.bs-field .field-error { font-size: var(--fs-xs); color: var(--error-text); font-weight: 600; }
+
+/* Brandsync Checkbox component (bs-checkbox / bs-checkbox__box), restyled
+
+   with this prototype's existing dark-surface tokens: the checked box fills
+
+   with --primary and the check glyph uses --text-on-primary, matching how
+
+   .chip and .bs-btn-primary already render "selected/primary" elsewhere. */
+
+.bs-checkbox {
+
+  display: inline-flex; align-items: center; gap: var(--sp-100);
+
+  cursor: pointer; font-family: inherit; font-size: var(--fs-sm);
+
+  color: var(--text-secondary); user-select: none;
+
+  min-height: var(--tap-min); padding: var(--sp-50) 4px;
+
+}
+
+.bs-checkbox input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.bs-checkbox__box {
+
+  position: relative; width: 22px; height: 22px;
+
+  border-radius: var(--radius-sm); border: 2px solid var(--border-default);
+
+  background: transparent; color: var(--text-on-primary); flex-shrink: 0;
+
+  display: flex; align-items: center; justify-content: center;
+
+  transition: border-color .15s ease, background .15s ease;
+
+}
+
+.bs-checkbox__box svg { width: 14px; height: 14px; opacity: 0; transition: opacity .15s ease; }
+
+.bs-checkbox:hover .bs-checkbox__box { border-color: var(--border-strong); }
+
+.bs-checkbox input:focus-visible ~ .bs-checkbox__box { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.bs-checkbox input:checked ~ .bs-checkbox__box { background: var(--primary); border-color: var(--primary); }
+
+.bs-checkbox input:checked ~ .bs-checkbox__box svg { opacity: 1; }
+
+.bs-checkbox:hover input:checked ~ .bs-checkbox__box { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+ 
+
+/* ---------- Items view ---------- */
+
+/* Kiosk guidelines: scanning is the primary action (avoid search bars);
+
+   category browsing is a secondary, tucked-away fallback for produce /
+
+   untagged items. */
+
+ 
+
+/* #view-items always uses CSS Grid with named areas, so the exact same
+
+   markup can restack (narrow kiosk screen, single column, original reading
+
+   order below) or go two-column (wide/high-res screen, see the ≥900px rule
+
+   above) without touching the HTML. */
+
+#view-items {
+
+  display: grid;
+
+  grid-template-columns: 1fr;
+
+  grid-template-areas:
+
+    "greeting"
+
+    "registered"
+
+    "browse";
+
+}
+
+/* #view-items is an ID selector (specificity 1-0-0), which otherwise beats
+
+   the class+attribute .view[hidden] rule (0-2-0) regardless of source
+
+   order, silently showing this view even while "hidden" is set. */
+
+#view-items[hidden] { display: none; }
+
+.ia-greeting { grid-area: greeting; display: flex; flex-direction: column; gap: var(--sp-100); }
+
+.ia-registered { grid-area: registered; }
+
+.ia-browse { grid-area: browse; }
+
+ 
+
+.scan-cta { min-height: 64px; font-size: var(--fs-lg); }
+
+ 
+
+.registered-section { display: flex; flex-direction: column; gap: var(--sp-100); }
+
+.registered-section[hidden] { display: none; }
+
+.registered-header { display: flex; justify-content: space-between; align-items: baseline; }
+
+/* The item count sits next to the subtitle, right above the list, instead
+
+   of next to the heading — closer to the table it's describing, and
+
+   bottom-aligned with the subtitle's text line. */
+
+.registered-subheader { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--sp-150); }
+
+.registered-title { font-size: var(--fs-md); font-weight: 700; }
+
+/* Themed pill (same --primary-container/--text-accent pairing used by the
+
+   checked payment option below) instead of plain muted text, so the item
+
+   count reads as a branded element rather than disappearing into the page. */
+
+.registered-count {
+
+  font-size: var(--fs-sm); font-weight: 700; color: var(--text-accent);
+
+  background: var(--primary-container);
+
+  padding: var(--sp-50) var(--sp-150); border-radius: var(--radius-full);
+
+  flex-shrink: 0; white-space: nowrap;
+
+}
+
+/* Capped so a long list scrolls inside its own box instead of pushing the
+
+   footer (cart summary / checkout) down the page. */
+
+/* .view is a flex column with the default stretch cross-axis alignment, so
+
+   without this the button would stretch to the view's full width. */
+
+#editItemsBtn { align-self: flex-start; }
+
+ 
+
+.registered-list { list-style: none; margin: 0; padding: 0; background: var(--bg-raised); border: 1px solid var(--border-subtle); border-top: 3px solid var(--primary); border-radius: var(--radius-md); display: flex; flex-direction: column; max-height: 46vh; overflow-y: auto; }
+
+/* Staff-only cog — now lives in the shared .items-footer (see below)
+
+   alongside the cart summary + checkout button, rather than under the
+
+   registered-items list. */
+
+.cog-btn {
+
+  width: var(--tap-min); height: var(--tap-min);
+
+  display: flex; align-items: center; justify-content: center;
+
+  background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-full);
+
+  color: var(--text-muted); cursor: pointer; flex-shrink: 0;
+
+}
+
+.cog-btn svg { width: 22px; height: 22px; }
+
+.cog-btn:hover { background: var(--bg-hover); color: var(--text-secondary); border-color: var(--border-strong); }
+
+.cog-btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+
+ 
+
+@keyframes flashAdded { 0% { background: var(--primary-container); } 100% { background: transparent; } }
+
+.cart-line.flash-added { animation: flashAdded 1.1s ease-out; }
+
+ 
+
+/* Two explicit entry points into finding an item, replacing the former
+
+   "Browse by category" collapsible disclosure. Each opens its own dialog. */
+
+/* Tinted card (same --primary-container/--primary pairing as the checked
+
+   payment option) at every width, not just the >=900px two-column layout,
+
+   so this block reads as an on-brand accent panel rather than plain,
+
+   uncolored buttons floating on the page background. */
+
+.browse-actions {
+
+  display: flex; flex-direction: column; align-items: stretch; gap: var(--sp-150);
+
+  padding: var(--sp-200);
+
+  background: var(--primary-container);
+
+  border: 1px solid var(--primary);
+
+  border-radius: var(--radius-md);
+
+}
+
+.browse-actions .bs-btn { min-height: var(--tap-min); white-space: normal; }
+
+.browse-actions .ia-section-label { color: var(--text-accent); }
+
+ 
+
+.chip-row { display: flex; align-items: center; gap: var(--sp-100); overflow-x: auto; overflow-y: hidden; min-height: 44px; padding-bottom: 2px; }
+
+/* Brandsync Chips component (bs-chip / bs-chip-neutral / bs-chip-primary).
+
+   Used here interactively as category filters, so — on top of the spec's
+
+   shape/color tokens — min-height is raised to the kiosk's 40px touch-target
+
+   baseline (same as .bs-btn.small) instead of the component's default
+
+   compact/informative sizing, which is too small for a touch kiosk. */
+
+.bs-chip {
+
+  flex-shrink: 0;
+
+  display: inline-flex; align-items: center; justify-content: center;
+
+  padding: var(--sp-50) var(--sp-150);
+
+  min-height: 40px;
+
+  border-radius: var(--radius-full);
+
+  border: 1.5px solid transparent;
+
+  font-size: var(--fs-xs);
+
+  font-weight: 600;
+
+  font-family: inherit;
+
+  line-height: var(--fs-md);
+
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition: all .15s ease;
+
+}
+
+.bs-chip-neutral { background: var(--bg-raised); color: var(--text-secondary); border-color: var(--border-default); }
+
+.bs-chip-neutral:hover { border-color: var(--border-strong); }
+
+.bs-chip-primary { background: var(--primary); color: var(--text-on-primary); border-color: var(--primary); }
+
+ 
+
+.results-count { color: var(--text-muted); font-size: var(--fs-sm); }
+
+ 
+
+.product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--sp-150); list-style: none; margin: 0; padding: 0; }
+
+@media (max-width: 380px) { .product-grid { grid-template-columns: 1fr; } }
+
+/* Grid items default to min-width:auto (their content's min-content size),
+
+   which lets a card with an unusually long name/price push its whole column
+
+   wider than the others. min-width:0 makes every card defer entirely to the
+
+   grid's equal 1fr column width instead. */
+
+.product-grid > li { min-width: 0; }
+
+ 
+
+.prod-card {
+
+  position: relative;
+
+  width: 100%; min-width: 0; box-sizing: border-box;
+
+  display: flex; flex-direction: column; gap: var(--sp-75);
+
+  text-align: left; background: var(--bg-raised);
+
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+
+  padding: var(--sp-150); cursor: pointer; color: var(--text-default);
+
+  min-height: 96px;
+
+}
+
+.prod-card:hover { border-color: var(--border-default); background: var(--bg-hover); }
+
+.prod-category { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-accent); }
+
+.prod-name { font-size: var(--fs-sm); font-weight: 600; line-height: 1.3; flex: 1; }
+
+.prod-price { font-size: var(--fs-md); font-weight: 700; }
+
+/* Brandsync Badge component (bs-badge / bs-badge--numeric / bs-badge--primary
+
+   / bs-badge--success). The numeric variant's box is widened from the
+
+   spec's fixed circle so it still reads cleanly at 2-digit quantities. */
+
+.bs-badge {
+
+  display: inline-flex; align-items: center; justify-content: center;
+
+  font-family: inherit; font-weight: 700; white-space: nowrap;
+
+}
+
+.bs-badge--numeric {
+
+  position: absolute; top: 8px; right: 8px;
+
+  min-width: 24px; height: 24px; border-radius: var(--radius-full);
+
+  font-size: var(--fs-xs); padding: 0 6px;
+
+}
+
+.bs-badge--primary { background: var(--primary); color: var(--text-on-primary); }
+
+.bs-badge--success { background: var(--success-surface); color: #fff; }
+
+ 
+
+.empty-state { text-align: center; color: var(--text-muted); padding: var(--sp-500) var(--sp-200); grid-column: 1 / -1; }
+
+ 
+
+/* Items-screen footer: staff cog (left) + cart summary/checkout (right),
+
+   combined into one full-width, bottom-sticky bar. Sits below <main> as a
+
+   true page footer rather than inside the view's own grid, so it stays
+
+   pinned in both the single- and two-column layouts without needing any
+
+   scroll-container-specific tricks — position:sticky here is a belt-and-
+
+   braces fallback in case it ever ends up inside a scrolling ancestor. */
+
+.items-footer {
+
+  position: sticky; bottom: 0;
+
+  display: flex; flex-direction: column; gap: var(--sp-100);
+
+  padding: var(--sp-150) var(--sp-200);
+
+  background: var(--bg-raised); border-top: 1px solid var(--border-subtle);
+
+  /* Prototyping shortcut: tapping the footer (outside its own buttons)
+
+     simulates scanning another item — see the click handler in the script. */
+
+  cursor: pointer;
+
+}
+
+.items-footer[hidden] { display: none; }
+
+.items-footer-main { display: flex; align-items: center; gap: var(--sp-150); }
+
+/* justify-content:flex-end keeps the summary text and the Checkout button
+
+   next to each other (just the row's own gap apart) over on the right,
+
+   instead of the summary sitting pinned to the far left with a big empty
+
+   stretch before the button. */
+
+.bottom-bar { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-150); min-width: 0; }
+
+.bottom-bar .cart-summary { display: flex; flex-direction: column; align-items: flex-start; }
+
+.bottom-bar .cart-summary .count { font-size: var(--fs-sm); color: var(--text-secondary); }
+
+.bottom-bar .cart-summary .total { font-size: var(--fs-xl); font-weight: 800; }
+
+ 
+
+/* ---------- Dialogs ---------- */
+
+.bs-dialog-overlay {
+
+  position: fixed; inset: 0; background: var(--bg-overlay);
+
+  display: flex; align-items: center; justify-content: center;
+
+  padding: var(--sp-200); z-index: 1000;
+
+}
+
+.bs-dialog-overlay[hidden] { display: none; }
+
+.bs-dialog {
+
+  background: var(--bg-raised); border: 1px solid var(--border-subtle);
+
+  border-radius: var(--radius-lg); padding: var(--sp-300);
+
+  width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto;
+
+  display: flex; flex-direction: column; gap: var(--sp-200);
+
+  box-shadow: var(--shadow-lg);
+
+}
+
+.bs-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-100); }
+
+.bs-dialog-title { font-size: var(--fs-xl); font-weight: 700; }
+
+.bs-close-btn {
+
+  width: var(--tap-min); height: var(--tap-min); min-width: var(--tap-min);
+
+  display: flex; align-items: center; justify-content: center;
+
+  background: transparent; border: none; color: var(--text-secondary);
+
+  font-size: var(--fs-xl); cursor: pointer; border-radius: var(--radius-sm); flex-shrink: 0;
+
+}
+
+.bs-close-btn:hover { background: var(--bg-hover); color: var(--text-default); }
+
+.bs-dialog-body { color: var(--text-secondary); font-size: var(--fs-md); line-height: 1.5; }
+
+.bs-dialog-actions { display: flex; gap: var(--sp-100); justify-content: flex-end; flex-wrap: wrap; }
+
+.bs-dialog-actions .bs-btn { flex: 1; }
+
+/* Wider variant for the "Find products" dialog, which needs room for the
+
+   category chips + product grid instead of a short form. */
+
+.bs-dialog-wide { max-width: 640px; }
+
+ 
+
+/* Staff login is a short admin form, not a full customer-flow screen, so it's
+
+   centered as a compact card instead of stretching to fill the view. */
+
+.staff-login-view { align-items: center; justify-content: center; }
+
+.staff-login-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: var(--sp-150); }
+
+.staff-login-actions { display: flex; gap: var(--sp-100); }
+
+.staff-login-actions .bs-btn { flex: 1; }
+
+.staff-admin-actions { display: flex; flex-direction: column; gap: var(--sp-100); }
+
+ 
+
+/* Registered / cart lines */
+
+.cart-line { display: flex; align-items: center; gap: var(--sp-150); padding: var(--sp-150); border-bottom: 1px solid var(--border-subtle); }
+
+.cart-line:last-child { border-bottom: none; }
+
+.cart-line-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.cart-line-name { font-weight: 600; font-size: var(--fs-sm); }
+
+.cart-line-unit { color: var(--text-muted); font-size: var(--fs-xs); }
+
+/* Fixed (not just min-) widths on the stepper and price columns, so a
+
+   longer item name or price can never push the −/+ buttons sideways
+
+   between rows — only .cart-line-info (flex:1) absorbs the length
+
+   difference, keeping every row's stepper and price in the same place. */
+
+.qty-stepper { display: flex; align-items: center; justify-content: center; gap: var(--sp-50); flex-shrink: 0; }
+
+.qty-btn {
+
+  width: var(--tap-min); height: var(--tap-min);
+
+  border-radius: var(--radius-sm); border: 1.5px solid var(--border-default);
+
+  background: var(--bg-base); color: var(--text-default);
+
+  font-size: var(--fs-lg); font-weight: 700; cursor: pointer;
+
+  display: flex; align-items: center; justify-content: center;
+
+  flex-shrink: 0;
+
+}
+
+.qty-btn:hover { background: var(--bg-hover); }
+
+.qty-value { width: 32px; flex-shrink: 0; text-align: center; font-weight: 700; }
+
+.cart-line-total { width: 100px; flex-shrink: 0; text-align: right; font-weight: 700; }
+
+.remove-btn {
+
+  color: var(--error-text); background: transparent; border: none; cursor: pointer;
+
+  display: inline-flex; align-items: center; justify-content: center;
+
+  width: var(--tap-min); min-height: var(--tap-min); flex-shrink: 0;
+
+  font-size: var(--fs-md); border-radius: var(--radius-sm);
+
+}
+
+.remove-btn:hover { background: var(--bg-hover); }
+
+/* Plain (non-interactive) empty state — the hand-scanner simulator now
+
+   lives on the items-footer instead of this card (see .items-footer). */
+
+.cart-empty-item { display: flex; flex: 1; }
+
+.cart-empty {
+
+  flex: 1; width: 100%;
+
+  display: flex; align-items: flex-start; justify-content: center;
+
+  text-align: center; color: var(--text-muted);
+
+  padding: var(--sp-400) var(--sp-200);
+
+  margin: 0;
+
+}
+
+/* Dev-facing note, not a real kiosk affordance — small and muted on
+
+   purpose, sits at the bottom of the registered-items card. */
+
+.prototype-tip { margin: 0; text-align: center; color: var(--text-muted); font-size: var(--fs-xs); }
+
+.cart-summary-row { display: flex; justify-content: space-between; align-items: baseline; padding-top: var(--sp-150); border-top: 1px solid var(--border-subtle); }
+
+.cart-summary-row .label { color: var(--text-secondary); }
+
+.cart-summary-row .value { font-size: var(--fs-xl); font-weight: 800; }
+
+ 
+
+/* ---------- Payment view ---------- */
+
+.summary-card { background: var(--bg-raised); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--sp-200); display: flex; flex-direction: column; gap: var(--sp-100); }
+
+.summary-card h2 { font-size: var(--fs-md); font-weight: 700; }
+
+/* Large, unmissable total — replaces a line-by-line itemized breakdown so
+
+   there's no ambiguity about what's about to be charged. */
+
+.payment-total-amount { font-size: var(--fs-4xl); font-weight: 800; text-align: center; padding: var(--sp-100) 0; }
+
+ 
+
+fieldset { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--sp-100); }
+
+legend { font-weight: 700; font-size: var(--fs-md); padding: 0; margin-bottom: var(--sp-50); }
+
+.pay-option {
+
+  display: flex; align-items: center; gap: var(--sp-150);
+
+  border: 2px solid var(--border-default); border-radius: var(--radius-md);
+
+  padding: var(--sp-150); cursor: pointer; background: var(--bg-raised);
+
+  min-height: var(--tap-min);
+
+}
+
+.pay-option:has(input:checked) { border-color: var(--primary); background: var(--primary-container); }
+
+.pay-option input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.pay-option .pay-icon { font-size: var(--fs-xl); }
+
+.pay-option .pay-label { font-weight: 600; }
+
+/* Brandsync Radio Button component (bs-radio__circle), reskinned with this
+
+   prototype's existing dark-surface tokens for the filled/checked dot. */
+
+.bs-radio__circle {
+
+  position: relative; width: 22px; height: 22px; flex-shrink: 0;
+
+  border-radius: var(--radius-full); border: 2px solid var(--border-default);
+
+  background: transparent; transition: border-color .15s ease, background .15s ease;
+
+  display: flex; align-items: center; justify-content: center;
+
+}
+
+.bs-radio__circle::after {
+
+  content: ""; width: 10px; height: 10px; border-radius: var(--radius-full);
+
+  background: var(--text-on-primary); transform: scale(0); transition: transform .15s ease;
+
+}
+
+.pay-option:hover .bs-radio__circle { border-color: var(--border-strong); }
+
+.pay-option input:focus-visible ~ .bs-radio__circle { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.pay-option input:checked ~ .bs-radio__circle { border-color: var(--primary); background: var(--primary); }
+
+.pay-option input:checked ~ .bs-radio__circle::after { transform: scale(1); }
+
+ 
+
+.demo-controls { border: 1px dashed var(--border-strong); border-radius: var(--radius-md); padding: var(--sp-150); display: flex; flex-direction: column; gap: var(--sp-75); }
+
+.demo-controls .demo-title { font-size: var(--fs-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+
+ 
+
+.alert-banner {
+
+  display: flex; align-items: flex-start; gap: var(--sp-100);
+
+  border-radius: var(--radius-md); padding: var(--sp-150);
+
+  font-size: var(--fs-sm);
+
+}
+
+.alert-banner.error { background: rgba(185,47,49,0.18); border: 1px solid var(--error-text); color: var(--error-text); }
+
+.alert-banner.info { background: var(--primary-container); border: 1px solid var(--primary); color: var(--text-default); font-weight: 600; justify-content: center; }
+
+.alert-banner[hidden] { display: none; }
+
+ 
+
+.processing { display: flex; align-items: center; justify-content: center; gap: var(--sp-100); }
+
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 3px solid rgba(0,0,0,0.35); border-top-color: var(--text-on-primary); animation: spin 0.8s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+ 
+
+/* ---------- Success view ---------- */
+
+#view-success { align-items: center; text-align: center; justify-content: center; gap: var(--sp-200); }
+
+.success-icon { width: 96px; height: 96px; border-radius: 50%; background: var(--success-surface); display: flex; align-items: center; justify-content: center; font-size: var(--fs-4xl); color: #fff; }
+
+ 
+
+/* ---------- Snackbar ---------- */
+
+.bs-snackbar {
+
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+
+  display: inline-flex; align-items: center; gap: var(--sp-150);
+
+  padding: var(--sp-150) var(--sp-200); border-radius: var(--radius-md);
+
+  background: var(--bg-hover); border: 1px solid var(--border-default);
+
+  color: var(--text-default); font-size: var(--fs-sm); font-weight: 600;
+
+  box-shadow: var(--shadow-md); z-index: 1200; max-width: 90%;
+
+}
+
+.bs-snackbar.success { background: var(--success-surface); border-color: var(--success-surface); color: #fff; }
+
+.bs-snackbar.error { background: var(--error-surface); border-color: var(--error-surface); color: #fff; }
+
+.bs-snackbar[hidden] { display: none; }
+
+ 
+
+/* ============================================================
+
+   WIDE / HIGH-RESOLUTION KIOSK OVERRIDES
+
+   Placed last on purpose: every rule here targets the same selectors as
+
+   earlier unconditional rules (#view-items, .product-grid, etc.), and with
+
+   equal specificity CSS resolves ties by source order — so this block must
+
+   come after those base rules to actually win at ≥900px.
+
+   ============================================================ */
+
+@media (min-width: 900px) {
+
+  .kiosk-frame {
+
+    /* Scales up on larger monitors instead of staying pinned at a single
+
+       fixed size — grows with the viewport up to a generous cap so it
+
+       reads as a real kiosk device rather than a small card lost on a
+
+       big screen, while still leaving breathing room around it. */
+
+    max-width: min(1600px, 90vw);
+
+    min-height: min(1000px, calc(100vh - 64px));
+
+  }
+
+  /* Two-column layout applies from the first moment the Items screen is
+
+     shown, even at 0 items — the registered-items panel just shows its
+
+     empty state (see renderRegisteredList) instead of being absent. */
+
+  #view-items {
+
+    grid-template-columns: 2fr 1fr;
+
+    /* An extra top row holds just the "Add your items" greeting over the
+
+       left column, with the right column left empty alongside it — that's
+
+       what pushes the browse card down to start level with the
+
+       registered-list card instead of with the greeting text above it. */
+
+    grid-template-rows: auto auto 1fr;
+
+    grid-template-areas:
+
+      "greeting   ."
+
+      "registered browse"
+
+      "registered .";
+
+    column-gap: var(--sp-400);
+
+  }
+
+  #view-items .ia-registered { display: flex; flex-direction: column; min-height: 0; }
+
+  #view-items .ia-registered .registered-list { flex: 1; max-height: 60vh; overflow-y: auto; }
+
+  /* .ia-browse shouldn't stretch to fill the remaining row — it's just two
+
+     buttons, not a tall panel. */
+
+  #view-items .ia-browse { align-self: start; }
+
+  .product-grid { grid-template-columns: repeat(3, 1fr); }
+
+  /* Card styling (background/border/padding) for the "can't scan it"
+
+     fallback now lives on .browse-actions itself, applied at every width —
+
+     see that rule further up. */
+
+ 
+
+  /* Payment is a single-column form, not a layout that benefits from the
+
+     wider 1040px frame used for the Items screen's two columns — left at
+
+     full width it stretches into an uncomfortably wide, hard-to-scan
+
+     form, so cap and center it like a normal reading-width column. */
+
+  #view-payment {
+
+    max-width: 640px;
+
+    width: 100%;
+
+    margin: 0 auto;
+
+  }
+
+ 
+
+  /* Success is also a single-column confirmation screen, not a layout that
+
+     benefits from the wide kiosk frame — same reasoning as Payment above:
+
+     left full width, its receipt/restart buttons stretch absurdly wide. */
+
+  #view-success {
+
+    max-width: 480px;
+
+    width: 100%;
+
+    margin: 0 auto;
+
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+ 
+
+<!-- Referenced only by the "sketch" color theme (filter: url(#pencilWobble)
+
+     in the stylesheet) to jitter straight borders/dividers into a hand-drawn
+
+     pencil line. Kept as a standalone hidden SVG rather than inline per
+
+     element, so every themed element can share the one filter definition. -->
+
+<svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+
+  <filter id="pencilWobble" x="-20%" y="-20%" width="140%" height="140%">
+
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="noise"/>
+
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.6" xChannelSelector="R" yChannelSelector="G"/>
+
+  </filter>
+
+</svg>
+
+ 
+
+<div class="kiosk-frame" id="app">
+
+ 
+
+  <!-- Persistent bar: Cancel order (left, only on items/payment), language
+
+       switcher + Call for help grouped together (top-right) — all present
+
+       in the same corners on every screen (idle, items, payment, success),
+
+       independent of the per-view topbar. -->
+
+  <div class="help-bar" id="helpBar">
+
+    <div class="help-bar-left">
+
+      <button class="bs-btn bs-btn-outline small" id="cancelOrderBtn" hidden data-i18n="cancelBtn">Cancel</button>
+
+    </div>
+
+    <div class="help-bar-right">
+
+      <select class="lang-select" id="langSelect" data-i18n-aria-label="languageLabel" aria-label="Language">
+
+        <option value="sv">Svenska</option>
+
+        <option value="en">English</option>
+
+        <option value="nb">Norsk</option>
+
+        <option value="da">Dansk</option>
+
+        <option value="fi">Suomi</option>
+
+        <option value="pl">Polski</option>
+
+      </select>
+
+      <button class="bs-btn bs-btn-outline small" id="helpBtn" data-i18n="callForHelp">Call for help</button>
+
+    </div>
+
+    <!-- Anchored to the help-bar itself (not the shared bottom snackbar)
+
+         so the confirmation appears right where the customer is already
+
+         looking, directly under the button they just pressed. -->
+
+    <div class="help-requested-toast" id="helpRequestedToast" role="status" aria-live="polite" hidden>
+
+      <span class="help-requested-toast-text" id="helpRequestedToastText"></span>
+
+      <button type="button" class="help-requested-toast-close" id="helpRequestedToastClose" data-i18n-aria-label="closeAria" aria-label="Close">✕</button>
+
+    </div>
+
+  </div>
+
+ 
+
+  <!-- Live region reused by all transient status messages (WCAG 4.1.3) -->
+
+  <div class="bs-snackbar" id="snackbar" role="status" aria-live="polite" hidden></div>
+
+ 
+
+  <main id="main">
+
+ 
+
+    <!-- ================= IDLE ================= -->
+
+    <section class="view" id="view-idle" data-i18n-aria-label="idleScreenAria" aria-label="Idle screen">
+
+      <div class="idle-brand">
+
+        <h1 class="idle-title" id="idleTitle">Buildmart</h1>
+
+        <p class="idle-tagline" id="idleTagline" data-i18n="idleTagline">Self-checkout</p>
+
+      </div>
+
+      <button class="idle-start" id="startBtn">
+
+        <span data-i18n="touchToStart">Touch to start</span>
+
+      </button>
+
+      <!-- Lower-left corner of the idle screen, out of the way of the
+
+           primary "Touch to start" circle. Reuses the help-bar's
+
+           .lang-select styling for a consistent dropdown look. -->
+
+      <select class="lang-select idle-theme-select" id="colorThemeSelect" data-i18n-aria-label="colorThemeGroupAria" aria-label="Color theme">
+
+        <option value="blue" data-i18n="colorThemeBlue">Blue theme</option>
+
+        <option value="orange" data-i18n="colorThemeOrange">Orange theme</option>
+
+        <option value="sketch" data-i18n="colorThemeSketch">Sketch theme</option>
+
+      </select>
+
+      <p class="idle-footer" id="idleFooter" data-i18n="idleFooter">Open today 07:00–19:00 · Need help? Ask any team member.</p>
+
+    </section>
+
+ 
+
+    <!-- ================= ITEMS ================= -->
+
+    <!-- Kiosk UX guideline: scanning is the primary, one-tap action; every
+
+         scan gets immediate visual (and sound) confirmation via the
+
+         Registered items list below. Search bars are avoided; category
+
+         browsing is a secondary fallback for items that can't be scanned. -->
+
+    <section class="view" id="view-items" hidden data-i18n-aria-label="registerItemsAria" aria-label="Register items">
+
+      <!-- Each block carries an ia-* class used purely for grid placement.
+
+           On the default/narrow kiosk screen these stack in this same order
+
+           (identical to the original single-column flow). On a wider,
+
+           higher-resolution screen (see the ≥900px rules below) #view-items
+
+           switches to a two-column grid: registered/scanned items on the
+
+           left, everything else — scanning, browsing, checkout — on the
+
+           right, without changing this markup or its reading order. -->
+
+      <!-- The greeting ("Add your items" / scan prompt) now sits directly on
+
+           top of the registered/scanned items list, replacing the previous
+
+           plain "Registered items" heading, instead of living in its own
+
+           block above the whole Items view. Split into its own grid area
+
+           (ia-greeting) so that on the ≥900px two-column layout the list
+
+           itself — not the heading — is what lines up with the login and
+
+           browse cards on the right. -->
+
+      <div class="ia-greeting">
+
+        <div class="registered-header">
+
+          <h1 class="view-title" data-i18n="addYourItems">Add your items</h1>
+
+        </div>
+
+        <div class="registered-subheader">
+
+          <p class="view-subtitle" id="itemsGreeting">Scan a barcode to add it to your list.</p>
+
+          <span class="registered-count" id="registeredCount">0 items</span>
+
+        </div>
+
+      </div>
+
+      <div class="registered-section ia-registered" id="registeredSection">
+
+        <ul class="registered-list" id="registeredList" data-i18n-aria-label="registeredItemsTitle" aria-label="Registered items"></ul>
+
+      </div>
+
+ 
+
+      <!-- Replaces the old "Browse by category" disclosure with two explicit
+
+           entry points: typing a barcode in by hand, or opening the full
+
+           product browser in a dialog. -->
+
+      <div class="browse-actions ia-browse">
+
+        <p class="ia-section-label" data-i18n="cantScanLabel">Can't scan an item?</p>
+
+        <button class="bs-btn bs-btn-outline" id="manualBarcodeBtn" data-i18n="enterBarcodeManually">Enter barcode manually</button>
+
+        <button class="bs-btn bs-btn-primary" id="findProductsBtn" data-i18n="findProducts">Find products</button>
+
+      </div>
+
+    </section>
+
+ 
+
+    <!-- ================= PAYMENT ================= -->
+
+    <section class="view" id="view-payment" hidden data-i18n-aria-label="paymentTitle" aria-label="Payment">
+
+      <h1 class="view-title" data-i18n="paymentTitle">Payment</h1>
+
+ 
+
+      <button class="bs-btn bs-btn-ghost small" id="editItemsBtn" data-i18n="editItems">← Edit items</button>
+
+ 
+
+      <!-- No itemized breakdown here — just a single, prominent total, so
+
+           it's unmistakable what's about to be charged. -->
+
+      <div class="summary-card">
+
+        <h2 data-i18n="totalToPay">Total to pay</h2>
+
+        <div class="payment-total-amount" id="summaryTotal">0.00 Kr</div>
+
+      </div>
+
+ 
+
+      <fieldset>
+
+        <legend data-i18n="choosePaymentMethod">Choose payment method</legend>
+
+        <label class="pay-option">
+
+          <input type="radio" name="paymethod" value="card" checked>
+
+          <span class="bs-radio__circle" aria-hidden="true"></span>
+
+          <span class="pay-icon" aria-hidden="true">💳</span>
+
+          <span class="pay-label" data-i18n="cardPay">Card (tap / chip)</span>
+
+        </label>
+
+        <label class="pay-option">
+
+          <input type="radio" name="paymethod" value="mobile">
+
+          <span class="bs-radio__circle" aria-hidden="true"></span>
+
+          <span class="pay-icon" aria-hidden="true">📱</span>
+
+          <span class="pay-label" data-i18n="mobilePay">Mobile pay</span>
+
+        </label>
+
+      </fieldset>
+
+ 
+
+      <div class="alert-banner error" id="paymentError" role="alert" tabindex="-1" hidden></div>
+
+ 
+
+      <div class="demo-controls">
+
+        <span class="demo-title" data-i18n="prototypeControlNote">Prototype control — not part of real kiosk</span>
+
+        <label class="bs-checkbox" for="simulateDecline">
+
+          <input type="checkbox" id="simulateDecline">
+
+          <span class="bs-checkbox__box" aria-hidden="true">
+
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+          </span>
+
+          <span data-i18n="simulateDeclineLabel">Simulate a declined payment on next attempt</span>
+
+        </label>
+
+      </div>
+
+ 
+
+      <button class="bs-btn bs-btn-primary hero block" id="payBtn"><span data-i18n="payWord">Pay</span> <span id="payAmount">0.00 Kr</span></button>
+
+ 
+
+      <div class="alert-banner info" id="paymentTerminalHint" role="status" hidden>
+
+        <span aria-hidden="true">💳</span>
+
+        <span data-i18n="followTerminalInstructions">Follow the instructions on the payment terminal.</span>
+
+      </div>
+
+    </section>
+
+ 
+
+    <!-- ================= SUCCESS ================= -->
+
+    <section class="view" id="view-success" hidden data-i18n-aria-label="purchaseCompleteAria" aria-label="Purchase complete">
+
+      <div class="success-icon" role="status" aria-live="polite" id="successAnnounce" aria-hidden="false">✓</div>
+
+      <h1 class="view-title" data-i18n="paymentSuccessful">Payment successful</h1>
+
+    </section>
+
+ 
+
+    <!-- ================= STAFF LOGIN (full screen) ================= -->
+
+    <!-- Reached via the cog icon under the registered items list on the
+
+         Items screen. A separate, full-screen step (rather than a dialog)
+
+         since it's an admin-only detour from the customer flow. -->
+
+    <section class="view staff-login-view staff-i18n-scope" id="view-staff-login" hidden data-i18n-aria-label="staffLoginTitle" aria-label="Ansattinnlogging">
+
+      <div class="staff-login-card">
+
+        <h1 class="view-title" data-i18n="staffLoginTitle">Ansattinnlogging</h1>
+
+        <p class="view-subtitle" data-i18n="staffLoginDesc">Skriv inn personal-PIN for å få tilgang til administrasjonsinnstillinger.</p>
+
+ 
+
+        <div class="bs-field" id="staffPinField">
+
+          <label for="staffPin" data-i18n="pinLabel">4-sifret PIN-kode</label>
+
+          <input type="password" id="staffPin" inputmode="numeric" maxlength="4" autocomplete="off">
+
+          <span class="field-error" id="staffLoginError" role="alert" hidden data-i18n="staffLoginErrorMsg">Feil PIN-kode. Prøv igjen.</span>
+
+        </div>
+
+        <label class="bs-checkbox" for="showStaffPin">
+
+          <input type="checkbox" id="showStaffPin">
+
+          <span class="bs-checkbox__box" aria-hidden="true">
+
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+          </span>
+
+          <span data-i18n="showPinLabel">Vis PIN-kode</span>
+
+        </label>
+
+ 
+
+        <div class="staff-login-actions">
+
+          <button class="bs-btn bs-btn-outline" id="staffLoginCancelBtn" data-i18n="cancelBtn">Avbryt</button>
+
+          <button class="bs-btn bs-btn-primary" id="staffLoginSubmitBtn" data-i18n="logIn">Logg inn</button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+ 
+
+    <!-- ================= STAFF ADMIN (full screen) ================= -->
+
+    <!-- Reached after a successful staff PIN. Gives staff a few
+
+         admin-only actions over the running kiosk session, separate
+
+         from anything a customer can reach. -->
+
+    <section class="view staff-login-view staff-i18n-scope" id="view-staff-admin" hidden data-i18n-aria-label="staffAdminTitle" aria-label="Personalinnstillinger">
+
+      <div class="staff-login-card">
+
+        <h1 class="view-title" data-i18n="staffAdminTitle">Personalinnstillinger</h1>
+
+        <p class="view-subtitle" data-i18n="staffAdminDesc">Administratorhandlinger for den pågående kioskøkten.</p>
+
+ 
+
+        <div class="staff-admin-actions">
+
+          <button class="bs-btn bs-btn-outline block" id="staffCancelPurchaseBtn" data-i18n="cancelPurchaseLabel">Avbryt pågående kjøp</button>
+
+          <button class="bs-btn bs-btn-outline block" id="staffThemeToggleBtn">Bytt til mørk modus</button>
+
+          <button class="bs-btn bs-btn-outline block" id="staffRestartBtn" data-i18n="restartApplicationLabel">Start applikasjonen på nytt</button>
+
+        </div>
+
+ 
+
+        <button class="bs-btn bs-btn-primary block" id="staffAdminExitBtn" data-i18n="backToKiosk">Tilbake til kiosken</button>
+
+      </div>
+
+    </section>
+
+ 
+
+  </main>
+
+ 
+
+  <!-- ================= ITEMS FOOTER ================= -->
+
+  <!-- Staff cog (left) and cart summary + checkout (right), combined into
+
+       one full-width, bottom-sticky footer — only relevant on the Items
+
+       screen, toggled alongside it in showView(). Sitting below <main>
+
+       (which scrolls independently) rather than inside the view's own
+
+       grid means it stays pinned without needing any scroll tricks of
+
+       its own, in both the single- and two-column layouts. -->
+
+  <footer class="items-footer" id="itemsFooter" hidden>
+
+    <!-- Dev-facing note, not a real kiosk affordance — pinned here (not
+
+         inside the scrollable registered-items card) so it's always
+
+         visible regardless of list scroll position or item count. -->
+
+    <p class="prototype-tip" data-i18n="prototypeTipScanCard">Prototype tip: press anywhere on this card to simulate scanning an item</p>
+
+    <div class="items-footer-main">
+
+      <button class="cog-btn staff-i18n-scope" id="staffSettingsBtn" data-i18n-aria-label="staffSettingsAria" aria-label="Personalinnstillinger">
+
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+
+        </svg>
+
+      </button>
+
+      <div class="bottom-bar" id="bottomBar">
+
+        <div class="cart-summary">
+
+          <span class="count" id="cartCount">0 items</span>
+
+          <span class="total" id="cartTotal">0.00 Kr</span>
+
+        </div>
+
+        <button class="bs-btn bs-btn-primary" id="checkoutBtn" disabled data-i18n="checkoutBtn">Checkout →</button>
+
+      </div>
+
+    </div>
+
+  </footer>
+
+ 
+
+  <!-- ================= FIND PRODUCTS DIALOG ================= -->
+
+  <!-- Houses the category chips + product grid that used to live inline
+
+       behind the "Browse by category" disclosure. -->
+
+  <div class="bs-dialog-overlay" id="findProductsDialog" role="dialog" aria-modal="true" aria-labelledby="findProductsDialogTitle" hidden>
+
+    <div class="bs-dialog bs-dialog-wide">
+
+      <div class="bs-dialog-header">
+
+        <h2 class="bs-dialog-title" id="findProductsDialogTitle" data-i18n="findProducts">Find products</h2>
+
+        <button class="bs-close-btn" id="findProductsDialogClose" data-i18n-aria-label="closeDialogAria" aria-label="Close dialog">✕</button>
+
+      </div>
+
+      <div class="chip-row" role="group" data-i18n-aria-label="filterByCategory" aria-label="Filter products by category" id="categoryRow"></div>
+
+      <p class="results-count" id="resultsCount" aria-live="polite"></p>
+
+      <ul class="product-grid" id="productGrid" data-i18n-aria-label="productsAria" aria-label="Products"></ul>
+
+    </div>
+
+  </div>
+
+ 
+
+  <!-- ================= MANUAL BARCODE DIALOG ================= -->
+
+  <!-- Lets a customer type in a barcode instead of scanning it, for items
+
+       the scanner can't read. Looks the code up against the catalog's
+
+       barcode field and adds a matching product, same as a real scan. -->
+
+  <div class="bs-dialog-overlay" id="manualBarcodeDialog" role="dialog" aria-modal="true" aria-labelledby="manualBarcodeDialogTitle" hidden>
+
+    <div class="bs-dialog">
+
+      <div class="bs-dialog-header">
+
+        <h2 class="bs-dialog-title" id="manualBarcodeDialogTitle" data-i18n="enterBarcodeManually">Enter barcode manually</h2>
+
+        <button class="bs-close-btn" id="manualBarcodeDialogClose" data-i18n-aria-label="closeDialogAria" aria-label="Close dialog">✕</button>
+
+      </div>
+
+      <p class="bs-dialog-body" data-i18n="manualBarcodeHint">Type the barcode number printed on the item.</p>
+
+      <div class="bs-field" id="manualBarcodeField">
+
+        <label for="manualBarcodeInput" data-i18n="barcodeLabel">Barcode</label>
+
+        <input type="text" id="manualBarcodeInput" inputmode="numeric" autocomplete="off">
+
+        <span class="field-error" id="manualBarcodeError" role="alert" hidden data-i18n="manualBarcodeErrorMsg">We couldn't find a product with that barcode.</span>
+
+      </div>
+
+      <div class="bs-dialog-actions">
+
+        <button class="bs-btn bs-btn-outline" id="manualBarcodeCancelBtn" data-i18n="cancelBtn">Cancel</button>
+
+        <button class="bs-btn bs-btn-primary" id="manualBarcodeSubmitBtn" data-i18n="addItem">Add item</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+ 
+
+  <!-- ================= PRESENCE / INACTIVITY DIALOG ================= -->
+
+  <!-- Kiosk UX guideline: always include presence detection to reset
+
+       between users after a period of inactivity. -->
+
+  <div class="bs-dialog-overlay" id="presenceDialog" role="alertdialog" aria-modal="true" aria-labelledby="presenceDialogTitle" hidden>
+
+    <div class="bs-dialog">
+
+      <h2 class="bs-dialog-title" id="presenceDialogTitle" data-i18n="stillThere">Still there?</h2>
+
+      <p class="bs-dialog-body" id="presenceDialogBody">This session will end in 15s due to inactivity, and your registered items will be cleared.</p>
+
+      <div class="bs-dialog-actions">
+
+        <button class="bs-btn bs-btn-primary block" id="presenceContinueBtn" data-i18n="yesContinue">Yes, continue</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+ 
+
+  <!-- ================= CANCEL ORDER DIALOG ================= -->
+
+  <div class="bs-dialog-overlay" id="cancelDialog" role="alertdialog" aria-modal="true" aria-labelledby="cancelDialogTitle" hidden>
+
+    <div class="bs-dialog">
+
+      <h2 class="bs-dialog-title" id="cancelDialogTitle" data-i18n="cancelThisOrder">Cancel this order?</h2>
+
+      <p class="bs-dialog-body" data-i18n="cancelBody">Your cart will be cleared and you'll return to the start screen.</p>
+
+      <div class="bs-dialog-actions">
+
+        <button class="bs-btn bs-btn-outline" id="cancelDialogBack" data-i18n="keepShopping">Keep shopping</button>
+
+        <button class="bs-btn bs-btn-destructive" id="cancelDialogConfirm" data-i18n="cancelOrder">Cancel order</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+ 
+
+</div>
+
+ 
+
+<script>
+
+(function () {
+
+  "use strict";
+
+ 
+
+  /* ============================================================
+
+     LANGUAGE / TRANSLATIONS
+
+     Covers all UI chrome (buttons, labels, headings, messages) in
+
+     Swedish, English, Norwegian (Bokmål), Danish, Finnish and Polish.
+
+     Product and category names from CATALOG below are intentionally
+
+     left untranslated (by request — catalog stays in English in every
+
+     language). Switch languages via the selector in the top-left
+
+     corner, present on every screen.
+
+     ============================================================ */
+
+  var STRINGS = {
+
+    en: {
+
+      selfCheckoutSuffix: "Self-Checkout", callForHelp: "Call for help",
+
+      callForHelpAnnounce: "Help requested — a team member has been notified and will be with you shortly.",
+
+      cancelOrder: "Cancel order", languageLabel: "Language",
+
+      switchToLightMode: "Switch to light mode", switchToDarkMode: "Switch to dark mode",
+
+      stepItems: "Items", stepPayment: "Payment", stepDone: "Done",
+
+      stepAnnouncerTemplate: "Step {n} of 3: {label}",
+
+      idleTagline: "Self-checkout",
+
+      idleFooter: "Open today 07:00–19:00 · Need help? Ask any team member.",
+
+      touchToStart: "Touch to start",
+
+      addYourItems: "Add your items", scanPrompt: "Scan a barcode to add it to your list.",
+
+      cantScanLabel: "Can't scan an item?",
+
+      registeredItemsTitle: "Registered items",
+
+      item_one: "item", item_other: "items",
+
+      emptyRegisteredList: "No items registered yet. Scan an item to get started.",
+
+      prototypeTipScanCard: "Prototype tip: press anywhere on this bar (outside the buttons) to simulate scanning an item",
+
+      each: "each",
+
+      decreaseQtyAriaTemplate: "Decrease quantity of {name}",
+
+      increaseQtyAriaTemplate: "Increase quantity of {name}",
+
+      remove: "Remove",
+
+      removeAriaTemplate: "Remove {name}",
+
+      browseSummary: "Can't scan an item? Browse by category",
+
+      enterBarcodeManually: "Enter barcode manually", findProducts: "Find products",
+
+      manualBarcodeHint: "Type the barcode number printed on the item.",
+
+      barcodeLabel: "Barcode",
+
+      manualBarcodeErrorMsg: "We couldn't find a product with that barcode.",
+
+      addItem: "Add item",
+
+      filterByCategory: "Filter products by category", productsAria: "Products",
+
+      categoryAll: "All",
+
+      product_one: "product", product_other: "products",
+
+      noProductsInCategory: "No products in this category.",
+
+      addProductAriaTemplate: "Add {name}, {price}.", inCartAriaTemplate: "{qty} in cart.",
+
+      removedAnnounceTemplate: "{name} removed from your registered items.",
+
+      checkoutBtn: "Checkout →",
+
+      editItems: "← Edit items", paymentTitle: "Payment", orderSummary: "Order summary",
+
+      totalToPay: "Total to pay",
+
+      total: "Total",
+
+      choosePaymentMethod: "Choose payment method",
+
+      cardPay: "Card (tap / chip)", mobilePay: "Mobile pay",
+
+      prototypeControlNote: "Prototype control — not part of real kiosk",
+
+      simulateDeclineLabel: "Simulate a declined payment on next attempt",
+
+      payWord: "Pay", processingPaymentLabel: "Processing payment…",
+
+      followTerminalInstructions: "Follow the instructions on the payment terminal.",
+
+      paymentDeclinedError: "Payment declined. Please try again or choose a different payment method.",
+
+      paymentDeclinedAnnounce: "Payment declined.",
+
+      paymentSuccessful: "Payment successful",
+
+      logIn: "Log in",
+
+      pinLabel: "4-digit PIN",
+
+      showPinLabel: "Show PIN", cancelBtn: "Cancel",
+
+      staffSettingsAria: "Staff settings", staffLoginTitle: "Staff login",
+
+      staffLoginDesc: "Enter the staff PIN to access admin settings.",
+
+      staffLoginErrorMsg: "Incorrect PIN. Please try again.",
+
+      staffSignedInAnnounce: "Staff signed in.",
+
+      staffAdminTitle: "Staff settings", staffAdminDesc: "Admin actions for the current kiosk session.",
+
+      cancelPurchaseLabel: "Cancel the ongoing purchase",
+
+      restartApplicationLabel: "Restart application",
+
+      backToKiosk: "Back to kiosk",
+
+      appRestartedAnnounce: "Application restarted.",
+
+      closeDialogAria: "Close dialog", closeAria: "Close",
+
+      stillThere: "Still there?",
+
+      sessionEndTemplate: "This session will end in {s}s due to inactivity, and your registered items will be cleared.",
+
+      yesContinue: "Yes, continue", sessionEndedAnnounce: "Session ended due to inactivity.",
+
+      cancelThisOrder: "Cancel this order?",
+
+      cancelBody: "Your cart will be cleared and you'll return to the start screen.",
+
+      keepShopping: "Keep shopping",
+
+      idleScreenAria: "Idle screen", registerItemsAria: "Register items",
+
+      purchaseCompleteAria: "Purchase complete", checkoutProgressAria: "Checkout progress",
+
+      colorThemeGroupAria: "Color theme", colorThemeBlue: "Blue theme", colorThemeOrange: "Orange theme", colorThemeSketch: "Sketch theme"
+
+    },
+
+    sv: {
+
+      selfCheckoutSuffix: "Självutcheckning", callForHelp: "Tillkalla hjälp",
+
+      callForHelpAnnounce: "Hjälp har begärts – en medarbetare har meddelats och kommer snart.",
+
+      cancelOrder: "Avbryt köp", languageLabel: "Språk",
+
+      switchToLightMode: "Byt till ljust läge", switchToDarkMode: "Byt till mörkt läge",
+
+      stepItems: "Varor", stepPayment: "Betalning", stepDone: "Klart",
+
+      stepAnnouncerTemplate: "Steg {n} av 3: {label}",
+
+      idleTagline: "Självutcheckning",
+
+      idleFooter: "Öppet idag 07:00–19:00 · Behöver du hjälp? Fråga vår personal.",
+
+      touchToStart: "Tryck för att börja",
+
+      addYourItems: "Lägg till dina varor", scanPrompt: "Skanna en streckkod för att lägga till den i listan.",
+
+      cantScanLabel: "Kan du inte skanna varan?",
+
+      registeredItemsTitle: "Registrerade varor",
+
+      item_one: "vara", item_other: "varor",
+
+      emptyRegisteredList: "Inga varor registrerade än. Skanna en vara för att komma igång.",
+
+      prototypeTipScanCard: "Prototyptips: tryck var som helst på det här fältet (utanför knapparna) för att simulera skanning av en vara",
+
+      each: "st",
+
+      decreaseQtyAriaTemplate: "Minska antal för {name}",
+
+      increaseQtyAriaTemplate: "Öka antal för {name}",
+
+      remove: "Ta bort",
+
+      removeAriaTemplate: "Ta bort {name}",
+
+      browseSummary: "Kan du inte skanna en vara? Bläddra per kategori",
+
+      enterBarcodeManually: "Ange streckkod manuellt", findProducts: "Hitta produkter",
+
+      manualBarcodeHint: "Skriv streckkodsnumret som finns på varan.",
+
+      barcodeLabel: "Streckkod",
+
+      manualBarcodeErrorMsg: "Vi kunde inte hitta någon produkt med den streckkoden.",
+
+      addItem: "Lägg till vara",
+
+      filterByCategory: "Filtrera produkter efter kategori", productsAria: "Produkter",
+
+      categoryAll: "Alla",
+
+      product_one: "produkt", product_other: "produkter",
+
+      noProductsInCategory: "Inga produkter i den här kategorin.",
+
+      addProductAriaTemplate: "Lägg till {name}, {price}.", inCartAriaTemplate: "{qty} i varukorgen.",
+
+      removedAnnounceTemplate: "{name} har tagits bort från dina registrerade varor.",
+
+      checkoutBtn: "Till kassan →",
+
+      editItems: "← Ändra varor", paymentTitle: "Betalning", orderSummary: "Ordersammanfattning",
+
+      totalToPay: "Totalt att betala",
+
+      total: "Totalt",
+
+      choosePaymentMethod: "Välj betalsätt",
+
+      cardPay: "Kort (tap / chip)", mobilePay: "Mobil betalning",
+
+      prototypeControlNote: "Prototypinställning – inte en del av den riktiga kiosken",
+
+      simulateDeclineLabel: "Simulera nekad betalning vid nästa försök",
+
+      payWord: "Betala", processingPaymentLabel: "Behandlar betalning…",
+
+      followTerminalInstructions: "Följ instruktionerna på betalterminalen.",
+
+      paymentDeclinedError: "Betalningen nekades. Försök igen eller välj ett annat betalsätt.",
+
+      paymentDeclinedAnnounce: "Betalningen nekades.",
+
+      paymentSuccessful: "Betalningen lyckades",
+
+      logIn: "Logga in",
+
+      pinLabel: "4-siffrig kod",
+
+      showPinLabel: "Visa kod", cancelBtn: "Avbryt",
+
+      staffSettingsAria: "Personalinställningar", staffLoginTitle: "Personalinloggning",
+
+      staffLoginDesc: "Ange personalkoden för att komma åt admininställningar.",
+
+      staffLoginErrorMsg: "Fel kod. Försök igen.",
+
+      staffSignedInAnnounce: "Personal inloggad.",
+
+      staffAdminTitle: "Personalinställningar", staffAdminDesc: "Administratörsåtgärder för den pågående kiosksessionen.",
+
+      cancelPurchaseLabel: "Avbryt pågående köp",
+
+      restartApplicationLabel: "Starta om applikationen",
+
+      backToKiosk: "Tillbaka till kiosken",
+
+      appRestartedAnnounce: "Applikationen har startats om.",
+
+      closeDialogAria: "Stäng dialogruta", closeAria: "Stäng",
+
+      stillThere: "Är du kvar?",
+
+      sessionEndTemplate: "Sessionen avslutas om {s} s på grund av inaktivitet, och dina registrerade varor rensas.",
+
+      yesContinue: "Ja, fortsätt", sessionEndedAnnounce: "Sessionen avslutades på grund av inaktivitet.",
+
+      cancelThisOrder: "Avbryta det här köpet?",
+
+      cancelBody: "Din varukorg töms och du återförs till startskärmen.",
+
+      keepShopping: "Fortsätt handla",
+
+      idleScreenAria: "Startskärm", registerItemsAria: "Registrera varor",
+
+      purchaseCompleteAria: "Köp genomfört", checkoutProgressAria: "Köpets framsteg",
+
+      colorThemeGroupAria: "Färgtema", colorThemeBlue: "Blått tema", colorThemeOrange: "Orange tema", colorThemeSketch: "Skisstema"
+
+    },
+
+    nb: {
+
+      selfCheckoutSuffix: "Selvbetjent kasse", callForHelp: "Tilkall hjelp",
+
+      callForHelpAnnounce: "Hjelp er forespurt – en medarbeider er varslet og kommer straks.",
+
+      cancelOrder: "Avbryt kjøp", languageLabel: "Språk",
+
+      switchToLightMode: "Bytt til lys modus", switchToDarkMode: "Bytt til mørk modus",
+
+      stepItems: "Varer", stepPayment: "Betaling", stepDone: "Ferdig",
+
+      stepAnnouncerTemplate: "Steg {n} av 3: {label}",
+
+      idleTagline: "Selvbetjent kasse",
+
+      idleFooter: "Åpent i dag 07:00–19:00 · Trenger du hjelp? Spør en ansatt.",
+
+      touchToStart: "Trykk for å starte",
+
+      addYourItems: "Legg til varene dine", scanPrompt: "Skann en strekkode for å legge den til listen.",
+
+      cantScanLabel: "Kan du ikke skanne varen?",
+
+      registeredItemsTitle: "Registrerte varer",
+
+      item_one: "vare", item_other: "varer",
+
+      emptyRegisteredList: "Ingen varer registrert ennå. Skann en vare for å komme i gang.",
+
+      prototypeTipScanCard: "Prototyptips: trykk hvor som helst på denne linjen (utenom knappene) for å simulere skanning av en vare",
+
+      each: "stk",
+
+      decreaseQtyAriaTemplate: "Reduser antall for {name}",
+
+      increaseQtyAriaTemplate: "Øk antall for {name}",
+
+      remove: "Fjern",
+
+      removeAriaTemplate: "Fjern {name}",
+
+      browseSummary: "Kan du ikke skanne en vare? Bla gjennom kategori",
+
+      enterBarcodeManually: "Angi strekkode manuelt", findProducts: "Finn produkter",
+
+      manualBarcodeHint: "Skriv inn strekkodenummeret som står på varen.",
+
+      barcodeLabel: "Strekkode",
+
+      manualBarcodeErrorMsg: "Vi fant ingen vare med den strekkoden.",
+
+      addItem: "Legg til vare",
+
+      filterByCategory: "Filtrer produkter etter kategori", productsAria: "Produkter",
+
+      categoryAll: "Alle",
+
+      product_one: "produkt", product_other: "produkter",
+
+      noProductsInCategory: "Ingen produkter i denne kategorien.",
+
+      addProductAriaTemplate: "Legg til {name}, {price}.", inCartAriaTemplate: "{qty} i handlekurven.",
+
+      removedAnnounceTemplate: "{name} er fjernet fra de registrerte varene dine.",
+
+      checkoutBtn: "Til kassen →",
+
+      editItems: "← Endre varer", paymentTitle: "Betaling", orderSummary: "Ordresammendrag",
+
+      totalToPay: "Totalt å betale",
+
+      total: "Totalt",
+
+      choosePaymentMethod: "Velg betalingsmåte",
+
+      cardPay: "Kort (tap / chip)", mobilePay: "Mobilbetaling",
+
+      prototypeControlNote: "Prototype-innstilling – ikke en del av den virkelige kiosken",
+
+      simulateDeclineLabel: "Simuler avvist betaling ved neste forsøk",
+
+      payWord: "Betal", processingPaymentLabel: "Behandler betaling…",
+
+      followTerminalInstructions: "Følg instruksjonene på betalingsterminalen.",
+
+      paymentDeclinedError: "Betalingen ble avvist. Prøv igjen eller velg en annen betalingsmåte.",
+
+      paymentDeclinedAnnounce: "Betalingen ble avvist.",
+
+      paymentSuccessful: "Betalingen var vellykket",
+
+      logIn: "Logg inn",
+
+      pinLabel: "4-sifret PIN-kode",
+
+      showPinLabel: "Vis PIN-kode", cancelBtn: "Avbryt",
+
+      staffSettingsAria: "Personalinnstillinger", staffLoginTitle: "Ansattinnlogging",
+
+      staffLoginDesc: "Skriv inn personal-PIN for å få tilgang til administrasjonsinnstillinger.",
+
+      staffLoginErrorMsg: "Feil PIN-kode. Prøv igjen.",
+
+      staffSignedInAnnounce: "Ansatt logget inn.",
+
+      staffAdminTitle: "Personalinnstillinger", staffAdminDesc: "Administratorhandlinger for den pågående kioskøkten.",
+
+      cancelPurchaseLabel: "Avbryt pågående kjøp",
+
+      restartApplicationLabel: "Start applikasjonen på nytt",
+
+      backToKiosk: "Tilbake til kiosken",
+
+      appRestartedAnnounce: "Applikasjonen er startet på nytt.",
+
+      closeDialogAria: "Lukk dialogboks", closeAria: "Lukk",
+
+      stillThere: "Er du der fortsatt?",
+
+      sessionEndTemplate: "Økten avsluttes om {s} s på grunn av inaktivitet, og de registrerte varene dine blir tømt.",
+
+      yesContinue: "Ja, fortsett", sessionEndedAnnounce: "Økten ble avsluttet på grunn av inaktivitet.",
+
+      cancelThisOrder: "Avbryte dette kjøpet?",
+
+      cancelBody: "Handlekurven tømmes og du føres tilbake til startskjermen.",
+
+      keepShopping: "Fortsett å handle",
+
+      idleScreenAria: "Startskjerm", registerItemsAria: "Registrer varer",
+
+      purchaseCompleteAria: "Kjøp fullført", checkoutProgressAria: "Fremdrift i kassen",
+
+      colorThemeGroupAria: "Fargetema", colorThemeBlue: "Blått tema", colorThemeOrange: "Oransje tema", colorThemeSketch: "Skissetema"
+
+    },
+
+    da: {
+
+      selfCheckoutSuffix: "Selvbetjent kasse", callForHelp: "Tilkald hjælp",
+
+      callForHelpAnnounce: "Der er anmodet om hjælp – en medarbejder er blevet underrettet og kommer snart.",
+
+      cancelOrder: "Annullér køb", languageLabel: "Sprog",
+
+      switchToLightMode: "Skift til lys tilstand", switchToDarkMode: "Skift til mørk tilstand",
+
+      stepItems: "Varer", stepPayment: "Betaling", stepDone: "Færdig",
+
+      stepAnnouncerTemplate: "Trin {n} af 3: {label}",
+
+      idleTagline: "Selvbetjent kasse",
+
+      idleFooter: "Åbent i dag 07:00–19:00 · Brug for hjælp? Spørg en medarbejder.",
+
+      touchToStart: "Tryk for at starte",
+
+      addYourItems: "Tilføj dine varer", scanPrompt: "Scan en stregkode for at tilføje den til din liste.",
+
+      cantScanLabel: "Kan du ikke scanne varen?",
+
+      registeredItemsTitle: "Registrerede varer",
+
+      item_one: "vare", item_other: "varer",
+
+      emptyRegisteredList: "Ingen varer registreret endnu. Scan en vare for at komme i gang.",
+
+      prototypeTipScanCard: "Prototypetip: tryk hvor som helst på denne bjælke (uden for knapperne) for at simulere scanning af en vare",
+
+      each: "stk.",
+
+      decreaseQtyAriaTemplate: "Reducér antal for {name}",
+
+      increaseQtyAriaTemplate: "Forøg antal for {name}",
+
+      remove: "Fjern",
+
+      removeAriaTemplate: "Fjern {name}",
+
+      browseSummary: "Kan du ikke scanne en vare? Gennemse efter kategori",
+
+      enterBarcodeManually: "Indtast stregkode manuelt", findProducts: "Find produkter",
+
+      manualBarcodeHint: "Indtast stregkodenummeret, der er trykt på varen.",
+
+      barcodeLabel: "Stregkode",
+
+      manualBarcodeErrorMsg: "Vi kunne ikke finde en vare med den stregkode.",
+
+      addItem: "Tilføj vare",
+
+      filterByCategory: "Filtrér produkter efter kategori", productsAria: "Produkter",
+
+      categoryAll: "Alle",
+
+      product_one: "produkt", product_other: "produkter",
+
+      noProductsInCategory: "Ingen produkter i denne kategori.",
+
+      addProductAriaTemplate: "Tilføj {name}, {price}.", inCartAriaTemplate: "{qty} i kurven.",
+
+      removedAnnounceTemplate: "{name} er fjernet fra dine registrerede varer.",
+
+      checkoutBtn: "Til kassen →",
+
+      editItems: "← Rediger varer", paymentTitle: "Betaling", orderSummary: "Ordreoversigt",
+
+      totalToPay: "Total til betaling",
+
+      total: "I alt",
+
+      choosePaymentMethod: "Vælg betalingsmetode",
+
+      cardPay: "Kort (tap / chip)", mobilePay: "Mobilbetaling",
+
+      prototypeControlNote: "Prototype-indstilling – ikke en del af den rigtige kiosk",
+
+      simulateDeclineLabel: "Simulér afvist betaling ved næste forsøg",
+
+      payWord: "Betal", processingPaymentLabel: "Behandler betaling…",
+
+      followTerminalInstructions: "Følg instruktionerne på betalingsterminalen.",
+
+      paymentDeclinedError: "Betalingen blev afvist. Prøv igen, eller vælg en anden betalingsmetode.",
+
+      paymentDeclinedAnnounce: "Betalingen blev afvist.",
+
+      paymentSuccessful: "Betalingen lykkedes",
+
+      logIn: "Log ind",
+
+      pinLabel: "4-cifret kode",
+
+      showPinLabel: "Vis kode", cancelBtn: "Annullér",
+
+      staffSettingsAria: "Personaleindstillinger", staffLoginTitle: "Personalelogin",
+
+      staffLoginDesc: "Indtast personale-PIN for at få adgang til adminindstillinger.",
+
+      staffLoginErrorMsg: "Forkert PIN. Prøv igen.",
+
+      staffSignedInAnnounce: "Personale logget ind.",
+
+      staffAdminTitle: "Personaleindstillinger", staffAdminDesc: "Administratorhandlinger for den aktuelle kiosksession.",
+
+      cancelPurchaseLabel: "Annullér igangværende køb",
+
+      restartApplicationLabel: "Genstart applikationen",
+
+      backToKiosk: "Tilbage til kiosken",
+
+      appRestartedAnnounce: "Applikationen er genstartet.",
+
+      closeDialogAria: "Luk dialogboks", closeAria: "Luk",
+
+      stillThere: "Er du her stadig?",
+
+      sessionEndTemplate: "Denne session afsluttes om {s} s på grund af inaktivitet, og dine registrerede varer ryddes.",
+
+      yesContinue: "Ja, fortsæt", sessionEndedAnnounce: "Sessionen blev afsluttet på grund af inaktivitet.",
+
+      cancelThisOrder: "Annullere dette køb?",
+
+      cancelBody: "Din kurv tømmes, og du føres tilbage til startskærmen.",
+
+      keepShopping: "Fortsæt med at handle",
+
+      idleScreenAria: "Startskærm", registerItemsAria: "Registrér varer",
+
+      purchaseCompleteAria: "Køb gennemført", checkoutProgressAria: "Fremgang i kassen",
+
+      colorThemeGroupAria: "Farvetema", colorThemeBlue: "Blåt tema", colorThemeOrange: "Orange tema", colorThemeSketch: "Skitsetema"
+
+    },
+
+    fi: {
+
+      selfCheckoutSuffix: "Itsepalvelukassa", callForHelp: "Kutsu apua",
+
+      callForHelpAnnounce: "Apua on pyydetty – henkilökunnalle on ilmoitettu, ja he saapuvat pian.",
+
+      cancelOrder: "Peruuta ostos", languageLabel: "Kieli",
+
+      switchToLightMode: "Vaihda vaaleaan tilaan", switchToDarkMode: "Vaihda tummaan tilaan",
+
+      stepItems: "Tuotteet", stepPayment: "Maksu", stepDone: "Valmis",
+
+      stepAnnouncerTemplate: "Vaihe {n}/3: {label}",
+
+      idleTagline: "Itsepalvelukassa",
+
+      idleFooter: "Avoinna tänään 07:00–19:00 · Tarvitsetko apua? Kysy henkilökunnalta.",
+
+      touchToStart: "Aloita koskettamalla",
+
+      addYourItems: "Lisää tuotteesi", scanPrompt: "Skannaa viivakoodi lisätäksesi sen listaan.",
+
+      cantScanLabel: "Etkö voi skannata tuotetta?",
+
+      registeredItemsTitle: "Rekisteröidyt tuotteet",
+
+      item_one: "tuote", item_other: "tuotetta",
+
+      emptyRegisteredList: "Ei vielä rekisteröityjä tuotteita. Skannaa tuote aloittaaksesi.",
+
+      prototypeTipScanCard: "Prototyyppivihje: paina mistä tahansa kohdasta tätä palkkia (painikkeiden ulkopuolelta) simuloidaksesi tuotteen skannausta",
+
+      each: "kpl",
+
+      decreaseQtyAriaTemplate: "Vähennä määrää: {name}",
+
+      increaseQtyAriaTemplate: "Lisää määrää: {name}",
+
+      remove: "Poista",
+
+      removeAriaTemplate: "Poista {name}",
+
+      browseSummary: "Etkö voi skannata tuotetta? Selaa kategorioittain",
+
+      enterBarcodeManually: "Syötä viivakoodi manuaalisesti", findProducts: "Etsi tuotteita",
+
+      manualBarcodeHint: "Kirjoita tuotteeseen painettu viivakoodinumero.",
+
+      barcodeLabel: "Viivakoodi",
+
+      manualBarcodeErrorMsg: "Emme löytäneet tuotetta kyseisellä viivakoodilla.",
+
+      addItem: "Lisää tuote",
+
+      filterByCategory: "Suodata tuotteita kategorian mukaan", productsAria: "Tuotteet",
+
+      categoryAll: "Kaikki",
+
+      product_one: "tuote", product_other: "tuotetta",
+
+      noProductsInCategory: "Ei tuotteita tässä kategoriassa.",
+
+      addProductAriaTemplate: "Lisää {name}, {price}.", inCartAriaTemplate: "{qty} ostoskorissa.",
+
+      removedAnnounceTemplate: "{name} poistettiin rekisteröidyistä tuotteistasi.",
+
+      checkoutBtn: "Kassalle →",
+
+      editItems: "← Muokkaa tuotteita", paymentTitle: "Maksu", orderSummary: "Tilauksen yhteenveto",
+
+      totalToPay: "Maksettava summa",
+
+      total: "Yhteensä",
+
+      choosePaymentMethod: "Valitse maksutapa",
+
+      cardPay: "Kortti (lähimaksu / sirulla)", mobilePay: "Mobiilimaksu",
+
+      prototypeControlNote: "Prototyypin hallinta – ei osa oikeaa kioskia",
+
+      simulateDeclineLabel: "Simuloi hylätty maksu seuraavalla yrityksellä",
+
+      payWord: "Maksa", processingPaymentLabel: "Käsitellään maksua…",
+
+      followTerminalInstructions: "Noudata maksupäätteen ohjeita.",
+
+      paymentDeclinedError: "Maksu hylättiin. Yritä uudelleen tai valitse toinen maksutapa.",
+
+      paymentDeclinedAnnounce: "Maksu hylättiin.",
+
+      paymentSuccessful: "Maksu onnistui",
+
+      logIn: "Kirjaudu sisään",
+
+      pinLabel: "4-numeroinen PIN-koodi",
+
+      showPinLabel: "Näytä PIN-koodi", cancelBtn: "Peruuta",
+
+      staffSettingsAria: "Henkilökunnan asetukset", staffLoginTitle: "Henkilökunnan kirjautuminen",
+
+      staffLoginDesc: "Anna henkilökunnan PIN-koodi päästäksesi ylläpitoasetuksiin.",
+
+      staffLoginErrorMsg: "Väärä PIN-koodi. Yritä uudelleen.",
+
+      staffSignedInAnnounce: "Henkilökunta kirjautunut sisään.",
+
+      staffAdminTitle: "Henkilökunnan asetukset", staffAdminDesc: "Ylläpitotoiminnot nykyiselle kioskistunnolle.",
+
+      cancelPurchaseLabel: "Peruuta käynnissä oleva ostos",
+
+      restartApplicationLabel: "Käynnistä sovellus uudelleen",
+
+      backToKiosk: "Takaisin kioskiin",
+
+      appRestartedAnnounce: "Sovellus käynnistetty uudelleen.",
+
+      closeDialogAria: "Sulje ikkuna", closeAria: "Sulje",
+
+      stillThere: "Oletko vielä paikalla?",
+
+      sessionEndTemplate: "Istunto päättyy {s} s kuluttua käyttämättömyyden vuoksi, ja rekisteröidyt tuotteesi tyhjennetään.",
+
+      yesContinue: "Kyllä, jatka", sessionEndedAnnounce: "Istunto päättyi käyttämättömyyden vuoksi.",
+
+      cancelThisOrder: "Peruutetaanko tämä ostos?",
+
+      cancelBody: "Ostoskorisi tyhjennetään ja sinut palautetaan aloitusnäkymään.",
+
+      keepShopping: "Jatka ostoksia",
+
+      idleScreenAria: "Aloitusnäkymä", registerItemsAria: "Rekisteröi tuotteita",
+
+      purchaseCompleteAria: "Ostos valmis", checkoutProgressAria: "Kassan eteneminen",
+
+      colorThemeGroupAria: "Väriteema", colorThemeBlue: "Sininen teema", colorThemeOrange: "Oranssi teema", colorThemeSketch: "Luonnosteema"
+
+    },
+
+    pl: {
+
+      selfCheckoutSuffix: "Samoobsługa", callForHelp: "Wezwij pomoc",
+
+      callForHelpAnnounce: "Wezwano pomoc – pracownik został powiadomiony i wkrótce podejdzie.",
+
+      cancelOrder: "Anuluj zamówienie", languageLabel: "Język",
+
+      switchToLightMode: "Przełącz na tryb jasny", switchToDarkMode: "Przełącz na tryb ciemny",
+
+      stepItems: "Produkty", stepPayment: "Płatność", stepDone: "Gotowe",
+
+      stepAnnouncerTemplate: "Krok {n} z 3: {label}",
+
+      idleTagline: "Samoobsługa",
+
+      idleFooter: "Dziś czynne 07:00–19:00 · Potrzebujesz pomocy? Zapytaj pracownika.",
+
+      touchToStart: "Dotknij, aby rozpocząć",
+
+      addYourItems: "Dodaj swoje produkty", scanPrompt: "Zeskanuj kod kreskowy, aby dodać produkt do listy.",
+
+      cantScanLabel: "Nie możesz zeskanować produktu?",
+
+      registeredItemsTitle: "Zarejestrowane produkty",
+
+      item_one: "pozycja", item_few: "pozycje", item_many: "pozycji",
+
+      emptyRegisteredList: "Nie zarejestrowano jeszcze żadnych produktów. Zeskanuj produkt, aby zacząć.",
+
+      prototypeTipScanCard: "Wskazówka prototypu: naciśnij dowolne miejsce na tym pasku (poza przyciskami), aby zasymulować zeskanowanie produktu",
+
+      each: "szt.",
+
+      decreaseQtyAriaTemplate: "Zmniejsz ilość: {name}",
+
+      increaseQtyAriaTemplate: "Zwiększ ilość: {name}",
+
+      remove: "Usuń",
+
+      removeAriaTemplate: "Usuń {name}",
+
+      browseSummary: "Nie możesz zeskanować produktu? Przeglądaj według kategorii",
+
+      enterBarcodeManually: "Wpisz kod kreskowy ręcznie", findProducts: "Znajdź produkty",
+
+      manualBarcodeHint: "Wpisz numer kodu kreskowego wydrukowany na produkcie.",
+
+      barcodeLabel: "Kod kreskowy",
+
+      manualBarcodeErrorMsg: "Nie znaleziono produktu o takim kodzie kreskowym.",
+
+      addItem: "Dodaj produkt",
+
+      filterByCategory: "Filtruj produkty według kategorii", productsAria: "Produkty",
+
+      categoryAll: "Wszystkie",
+
+      product_one: "produkt", product_few: "produkty", product_many: "produktów",
+
+      noProductsInCategory: "Brak produktów w tej kategorii.",
+
+      addProductAriaTemplate: "Dodaj {name}, {price}.", inCartAriaTemplate: "{qty} w koszyku.",
+
+      removedAnnounceTemplate: "Usunięto {name} z zarejestrowanych produktów.",
+
+      checkoutBtn: "Do kasy →",
+
+      editItems: "← Edytuj produkty", paymentTitle: "Płatność", orderSummary: "Podsumowanie zamówienia",
+
+      totalToPay: "Łączna kwota do zapłaty",
+
+      total: "Razem",
+
+      choosePaymentMethod: "Wybierz metodę płatności",
+
+      cardPay: "Karta (zbliżeniowo / chip)", mobilePay: "Płatność mobilna",
+
+      prototypeControlNote: "Ustawienie prototypu – nie jest częścią rzeczywistego kiosku",
+
+      simulateDeclineLabel: "Zasymuluj odrzuconą płatność przy następnej próbie",
+
+      payWord: "Zapłać", processingPaymentLabel: "Przetwarzanie płatności…",
+
+      followTerminalInstructions: "Postępuj zgodnie z instrukcjami na terminalu płatniczym.",
+
+      paymentDeclinedError: "Płatność odrzucona. Spróbuj ponownie lub wybierz inną metodę płatności.",
+
+      paymentDeclinedAnnounce: "Płatność odrzucona.",
+
+      paymentSuccessful: "Płatność zakończona powodzeniem",
+
+      logIn: "Zaloguj się",
+
+      pinLabel: "4-cyfrowy kod PIN",
+
+      showPinLabel: "Pokaż kod PIN", cancelBtn: "Anuluj",
+
+      staffSettingsAria: "Ustawienia personelu", staffLoginTitle: "Logowanie personelu",
+
+      staffLoginDesc: "Wprowadź kod PIN personelu, aby uzyskać dostęp do ustawień administracyjnych.",
+
+      staffLoginErrorMsg: "Nieprawidłowy kod PIN. Spróbuj ponownie.",
+
+      staffSignedInAnnounce: "Personel zalogowany.",
+
+      staffAdminTitle: "Ustawienia personelu", staffAdminDesc: "Czynności administracyjne dla bieżącej sesji kiosku.",
+
+      cancelPurchaseLabel: "Anuluj trwający zakup",
+
+      restartApplicationLabel: "Uruchom ponownie aplikację",
+
+      backToKiosk: "Powrót do kiosku",
+
+      appRestartedAnnounce: "Aplikacja została uruchomiona ponownie.",
+
+      closeDialogAria: "Zamknij okno", closeAria: "Zamknij",
+
+      stillThere: "Czy nadal tam jesteś?",
+
+      sessionEndTemplate: "Ta sesja zakończy się za {s} s z powodu bezczynności, a zarejestrowane produkty zostaną wyczyszczone.",
+
+      yesContinue: "Tak, kontynuuj", sessionEndedAnnounce: "Sesja zakończona z powodu bezczynności.",
+
+      cancelThisOrder: "Anulować to zamówienie?",
+
+      cancelBody: "Koszyk zostanie wyczyszczony, a Ty wrócisz do ekranu startowego.",
+
+      keepShopping: "Kontynuuj zakupy",
+
+      idleScreenAria: "Ekran startowy", registerItemsAria: "Rejestruj produkty",
+
+      purchaseCompleteAria: "Zakupy zakończone", checkoutProgressAria: "Postęp zakupów",
+
+      colorThemeGroupAria: "Motyw kolorystyczny", colorThemeBlue: "Niebieski motyw", colorThemeOrange: "Pomarańczowy motyw", colorThemeSketch: "Motyw szkicowy"
+
+    }
+
+  };
+
+ 
+
+  var currentLang = "en";
+
+ 
+
+  function pluralSuffix(n) {
+
+    if (currentLang === "pl") {
+
+      if (n === 1) return "one";
+
+      var mod10 = n % 10, mod100 = n % 100;
+
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "few";
+
+      return "many";
+
+    }
+
+    return n === 1 ? "one" : "other";
+
+  }
+
+ 
+
+  // t(key, vars) looks up the string for the active language (falling back to
+
+  // English if missing) and substitutes any {placeholder} tokens in vars.
+
+  function t(key, vars) {
+
+    var dict = STRINGS[currentLang] || STRINGS.en;
+
+    var str = dict[key];
+
+    if (str === undefined) str = (STRINGS.en[key] !== undefined) ? STRINGS.en[key] : key;
+
+    if (vars) {
+
+      Object.keys(vars).forEach(function (k) {
+
+        str = str.split("{" + k + "}").join(vars[k]);
+
+      });
+
+    }
+
+    return str;
+
+  }
+
+ 
+
+  // tStaff(key, vars) is t()'s counterpart for staff-only screens: these are
+
+  // fixed in Norwegian regardless of whichever language the customer has
+
+  // selected, so it always reads from STRINGS.nb instead of STRINGS[currentLang].
+
+  function tStaff(key, vars) {
+
+    var dict = STRINGS.nb || STRINGS.en;
+
+    var str = dict[key];
+
+    if (str === undefined) str = (STRINGS.en[key] !== undefined) ? STRINGS.en[key] : key;
+
+    if (vars) {
+
+      Object.keys(vars).forEach(function (k) {
+
+        str = str.split("{" + k + "}").join(vars[k]);
+
+      });
+
+    }
+
+    return str;
+
+  }
+
+ 
+
+  // countText(n, base) builds "{n} {noun}" using the correct plural form
+
+  // (base_one / base_few / base_many / base_other) for the active language.
+
+  function countText(n, base) {
+
+    var suffix = pluralSuffix(n);
+
+    var key = base + "_" + suffix;
+
+    var dict = STRINGS[currentLang] || STRINGS.en;
+
+    if (dict[key] === undefined) key = base + "_other"; // languages without few/many just use other
+
+    return n + " " + t(key);
+
+  }
+
+ 
+
+  /* ============================================================
+
+     MOCK DATA
+
+     ============================================================ */
+
+  var CATALOG = [
+
+    { id: "t1", name: "Treated timber plank 2.4m", category: "Timber", price: 8500, icon: "🪵", barcode: "100001" },
+
+    { id: "t2", name: "Plywood sheet 18mm", category: "Timber", price: 34900, icon: "🪵", barcode: "100002" },
+
+    { id: "t3", name: "OSB board 11mm", category: "Timber", price: 29900, icon: "🪵", barcode: "100015" },
+
+    { id: "t4", name: "Timber batten 45x45mm 2.4m", category: "Timber", price: 4200, icon: "🪵", barcode: "100016" },
+
+    { id: "t5", name: "MDF board 18mm", category: "Timber", price: 26500, icon: "🪵", barcode: "100029" },
+
+    { id: "t6", name: "Roofing batten 38x25mm 3.6m", category: "Timber", price: 3800, icon: "🪵", barcode: "100030" },
+
+    { id: "t7", name: "Decking board 3.6m", category: "Timber", price: 18900, icon: "🪵", barcode: "100031" },
+
+    { id: "t8", name: "Fence post 2.4m", category: "Timber", price: 9900, icon: "🪵", barcode: "100032" },
+
+    { id: "f1", name: "Wood screws 4x40mm (100pk)", category: "Fixings", price: 6250, icon: "🔩", barcode: "100003" },
+
+    { id: "f2", name: "Concrete anchor bolts (10pk)", category: "Fixings", price: 9800, icon: "🔩", barcode: "100004" },
+
+    { id: "f3", name: "Cable ties, assorted (50pk)", category: "Fixings", price: 4100, icon: "🔩", barcode: "100005" },
+
+    { id: "f4", name: "Hinges, heavy duty (2pk)", category: "Fixings", price: 7200, icon: "🔩", barcode: "100017" },
+
+    { id: "f5", name: "Nails, galvanized (1kg)", category: "Fixings", price: 5500, icon: "🔩", barcode: "100018" },
+
+    { id: "f6", name: "Wall plugs, assorted (50pk)", category: "Fixings", price: 3200, icon: "🔩", barcode: "100019" },
+
+    { id: "f7", name: "Coach screws 8x100mm (20pk)", category: "Fixings", price: 8900, icon: "🔩", barcode: "100033" },
+
+    { id: "f8", name: "Washers, assorted (100pk)", category: "Fixings", price: 2900, icon: "🔩", barcode: "100034" },
+
+    { id: "f9", name: "Threaded rod M10 1m", category: "Fixings", price: 4500, icon: "🔩", barcode: "100035" },
+
+    { id: "f10", name: "Corner brackets (10pk)", category: "Fixings", price: 6500, icon: "🔩", barcode: "100036" },
+
+    { id: "f11", name: "Silicone sealant, clear", category: "Fixings", price: 7900, icon: "🔩", barcode: "100037" },
+
+    { id: "f12", name: "Expanding foam filler", category: "Fixings", price: 9500, icon: "🔩", barcode: "100038" },
+
+    { id: "o1", name: "Claw hammer 16oz", category: "Tools", price: 18000, icon: "🛠️", barcode: "100006" },
+
+    { id: "o2", name: "Cordless drill driver", category: "Tools", price: 89000, icon: "🛠️", barcode: "100007" },
+
+    { id: "o3", name: "Tape measure 5m", category: "Tools", price: 7500, icon: "🛠️", barcode: "100008" },
+
+    { id: "o4", name: "Spirit level 60cm", category: "Tools", price: 24500, icon: "🛠️", barcode: "100020" },
+
+    { id: "o5", name: "Utility knife", category: "Tools", price: 6900, icon: "🛠️", barcode: "100021" },
+
+    { id: "o6", name: "Angle grinder", category: "Tools", price: 149000, icon: "🛠️", barcode: "100022" },
+
+    { id: "o7", name: "Circular saw", category: "Tools", price: 129000, icon: "🛠️", barcode: "100039" },
+
+    { id: "o8", name: "Jigsaw", category: "Tools", price: 79900, icon: "🛠️", barcode: "100040" },
+
+    { id: "o9", name: "Socket set (40pc)", category: "Tools", price: 59900, icon: "🛠️", barcode: "100041" },
+
+    { id: "o10", name: "Stud finder", category: "Tools", price: 34900, icon: "🛠️", barcode: "100042" },
+
+    { id: "o11", name: "Caulking gun", category: "Tools", price: 7900, icon: "🛠️", barcode: "100043" },
+
+    { id: "o12", name: "Chalk line reel", category: "Tools", price: 5900, icon: "🛠️", barcode: "100044" },
+
+    { id: "p1", name: "Interior matte paint 5L, White", category: "Paint", price: 32000, icon: "🎨", barcode: "100009" },
+
+    { id: "p2", name: "Paint roller & tray set", category: "Paint", price: 11500, icon: "🎨", barcode: "100010" },
+
+    { id: "p3", name: "Masking tape 48mm", category: "Paint", price: 3900, icon: "🎨", barcode: "100011" },
+
+    { id: "p4", name: "Exterior gloss paint 2.5L, White", category: "Paint", price: 28500, icon: "🎨", barcode: "100023" },
+
+    { id: "p5", name: "Paint brush set (3pk)", category: "Paint", price: 8900, icon: "🎨", barcode: "100024" },
+
+    { id: "p6", name: "Sandpaper, assorted grit (10pk)", category: "Paint", price: 4500, icon: "🎨", barcode: "100025" },
+
+    { id: "p7", name: "Primer/undercoat 2.5L", category: "Paint", price: 21900, icon: "🎨", barcode: "100045" },
+
+    { id: "p8", name: "Wood stain 1L, Oak", category: "Paint", price: 15900, icon: "🎨", barcode: "100046" },
+
+    { id: "p9", name: "Paint tray liners (5pk)", category: "Paint", price: 3200, icon: "🎨", barcode: "100047" },
+
+    { id: "p10", name: "Painter's tape 24mm", category: "Paint", price: 2900, icon: "🎨", barcode: "100048" },
+
+    { id: "p11", name: "Varnish, clear gloss 1L", category: "Paint", price: 17900, icon: "🎨", barcode: "100049" },
+
+    { id: "p12", name: "Paint stirrers (20pk)", category: "Paint", price: 1900, icon: "🎨", barcode: "100050" },
+
+    { id: "g1", name: "Bag of compost 50L", category: "Garden", price: 12900, icon: "🌱", barcode: "100012" },
+
+    { id: "g2", name: "Garden gloves (pair)", category: "Garden", price: 6000, icon: "🌱", barcode: "100013" },
+
+    { id: "g3", name: "Pruning shears", category: "Garden", price: 15500, icon: "🌱", barcode: "100014" },
+
+    { id: "g4", name: "Garden hose 20m", category: "Garden", price: 39900, icon: "🌱", barcode: "100026" },
+
+    { id: "g5", name: "Hand trowel", category: "Garden", price: 4500, icon: "🌱", barcode: "100027" },
+
+    { id: "g6", name: "Wheelbarrow", category: "Garden", price: 69900, icon: "🌱", barcode: "100028" },
+
+    { id: "g7", name: "Lawn mower, push", category: "Garden", price: 189900, icon: "🌱", barcode: "100051" },
+
+    { id: "g8", name: "Rake, garden", category: "Garden", price: 8900, icon: "🌱", barcode: "100052" },
+
+    { id: "g9", name: "Watering can 9L", category: "Garden", price: 6900, icon: "🌱", barcode: "100053" },
+
+    { id: "g10", name: "Secateurs", category: "Garden", price: 10900, icon: "🌱", barcode: "100054" },
+
+    { id: "g11", name: "Plant pots, assorted (3pk)", category: "Garden", price: 7500, icon: "🌱", barcode: "100055" },
+
+    { id: "g12", name: "Weed killer concentrate 1L", category: "Garden", price: 9900, icon: "🌱", barcode: "100056" }
+
+  ];
+
+  var CATEGORIES = ["All", "Timber", "Fixings", "Tools", "Paint", "Garden"];
+
+ 
+
+  /* ============================================================
+
+     IDLE SCREEN THEME — configurable colors + illustration
+
+     Swap ACTIVE_IDLE_SCREEN to any preset below (or your own object) to
+
+     re-brand the idle/splash screen only. Nothing else in the kiosk reads
+
+     from these values, so this can't accidentally re-theme Login, Items,
+
+     Payment or Success.
+
+     `illustration` accepts an emoji character, or an image URL / data: URI
+
+     (anything starting with "http" or "data:" is rendered as an <img>).
+
+     ============================================================ */
+
+  var IDLE_SCREEN_PRESETS = {
+
+    // Sourced from blue-theme.json (Brandsync "blue" palette, dark-mode
+
+    // semantic tokens): primary.400 / .300 / .900, derived from the
+
+    // project's official color file rather than hand-picked values.
+
+    blue: {
+
+      accent: "#3e88ef", accentHover: "#7aa6f2", logoBg: "#0051a2",
+
+      glowStrong: "rgba(62,136,239,0.20)", glowSoft: "rgba(62,136,239,0.10)",
+
+      // backgroundTint blends into --bg-base, so it needs a light-theme
+
+      // counterpart too — otherwise the idle gradient would stay dark
+
+      // even after switching the rest of the kiosk to light mode.
+
+      backgroundTint: "#002550", backgroundTintLight: "#d7e6fb",
+
+      illustration: "🏗️",
+
+      title: "Buildmart",
+
+      tagline: "Self-checkout",
+
+      footer: "Open today 07:00–19:00 · Need help? Ask any team member."
+
+    },
+
+    red: {
+
+      accent: "#e5484d", accentHover: "#ff6b6f", logoBg: "#3a1216",
+
+      glowStrong: "rgba(229,72,77,0.20)", glowSoft: "rgba(229,72,77,0.10)",
+
+      backgroundTint: "#2a1418", backgroundTintLight: "#fbdddf",
+
+      illustration: "🧱",
+
+      title: "Buildmart",
+
+      tagline: "Self-checkout",
+
+      footer: "Open today 07:00–19:00 · Need help? Ask any team member."
+
+    },
+
+    // Sourced from orange-theme.json (Brandsync "orange" palette), using
+
+    // the same 600/700 shades as the :root[data-color-theme="orange"] CSS
+
+    // tokens (see the stylesheet) so the idle circle button always matches
+
+    // whichever color theme is active elsewhere in the kiosk.
+
+    orange: {
+
+      accent: "#a24907", accentHover: "#873d07", logoBg: "#301302",
+
+      glowStrong: "rgba(162,73,7,0.20)", glowSoft: "rgba(162,73,7,0.10)",
+
+      backgroundTint: "#301302", backgroundTintLight: "#faeee9",
+
+      illustration: "🏗️",
+
+      // Each color theme now doubles as a distinct fictional storefront
+
+      // brand, so switching themes on the idle screen also swaps the
+
+      // company name, not just the color.
+
+      title: "Timbercraft",
+
+      tagline: "Self-checkout",
+
+      footer: "Open today 07:00–19:00 · Need help? Ask any team member."
+
+    },
+
+    // Novelty/demo theme, not sourced from a brand color file — matches the
+
+    // greyscale :root[data-color-theme="sketch"] CSS tokens (see stylesheet).
+
+    sketch: {
+
+      accent: "#333333", accentHover: "#000000", logoBg: "#1a1a1a",
+
+      glowStrong: "rgba(0,0,0,0.18)", glowSoft: "rgba(0,0,0,0.08)",
+
+      backgroundTint: "#1a1a1a", backgroundTintLight: "#e8e8e8",
+
+      illustration: "🏗️",
+
+      title: "Scribble & Sons",
+
+      tagline: "Self-checkout",
+
+      footer: "Open today 07:00–19:00 · Need help? Ask any team member."
+
+    }
+
+  };
+
+  // Which color theme is currently active ("blue", "orange" or "sketch").
+
+  // Picked by the customer via the dropdown in the idle screen's lower-left
+
+  // corner (setColorTheme below); kept in sync with both the :root[data-
+
+  // color-theme] CSS attribute and IDLE_SCREEN_PRESETS so the idle circle
+
+  // button always matches the rest of the kiosk's --primary color.
+
+  var DEFAULT_COLOR_THEME = "sketch";
+
+  var currentColorTheme = DEFAULT_COLOR_THEME;
+
+  var ACTIVE_IDLE_SCREEN = IDLE_SCREEN_PRESETS[DEFAULT_COLOR_THEME];
+
+ 
+
+  function setColorTheme(theme) {
+
+    currentColorTheme = IDLE_SCREEN_PRESETS[theme] ? theme : "blue";
+
+    // Only "orange" and "sketch" have a matching :root[data-color-theme=...]
+
+    // override block in the stylesheet — "blue" falls back to the
+
+    // unguarded :root tokens, so there's no need for a "blue" block too.
+
+    document.documentElement.setAttribute("data-color-theme", currentColorTheme);
+
+    ACTIVE_IDLE_SCREEN = IDLE_SCREEN_PRESETS[currentColorTheme];
+
+    applyIdleScreenTheme(ACTIVE_IDLE_SCREEN);
+
+    if ($("colorThemeSelect")) $("colorThemeSelect").value = currentColorTheme;
+
+  }
+
+ 
+
+  function applyIdleScreenTheme(cfg) {
+
+    var root = document.getElementById("view-idle");
+
+    root.style.setProperty("--idle-accent", cfg.accent);
+
+    root.style.setProperty("--idle-accent-hover", cfg.accentHover);
+
+    root.style.setProperty("--idle-glow-strong", cfg.glowStrong);
+
+    root.style.setProperty("--idle-glow-soft", cfg.glowSoft);
+
+    var isLight = document.documentElement.getAttribute("data-theme") === "light";
+
+    root.style.setProperty("--idle-bg-tint", (isLight && cfg.backgroundTintLight) ? cfg.backgroundTintLight : cfg.backgroundTint);
+
+ 
+
+    document.getElementById("idleTitle").textContent = cfg.title;
+
+    // Tagline/footer text is now owned by the language system (see
+
+    // STRINGS.idleTagline / idleFooter) rather than the theme preset, so
+
+    // the idle screen's copy stays correct across all six languages
+
+    // regardless of which color theme is active.
+
+  }
+
+ 
+
+  /* ============================================================
+
+     STATE
+
+     ============================================================ */
+
+  var DEFAULT_ORDER_COUNTER = 48213;
+
+  var DEFAULT_LANG = "en";
+
+  var DEFAULT_THEME = "light";
+
+  var state = {
+
+    view: "idle",
+
+    cart: {},            // id -> qty
+
+    activeCategory: "All",
+
+    orderCounter: DEFAULT_ORDER_COUNTER
+
+  };
+
+ 
+
+  var lastFocusedEl = null;
+
+  var successTimer = null;
+
+  var countdownSeconds = 5;
+
+  var lastScannedId = null;
+
+ 
+
+  /* ============================================================
+
+     HELPERS
+
+     ============================================================ */
+
+  function $(id) { return document.getElementById(id); }
+
+  function fmt(cents) { return (cents / 100).toFixed(2) + " Kr"; }
+
+  function catalogItem(id) { return CATALOG.filter(function (p) { return p.id === id; })[0]; }
+
+ 
+
+  /* ---- Sound feedback (kiosk guideline: confirm scans, payment, errors) ---- */
+
+  var audioCtx = null;
+
+  function beep(freq, duration, type) {
+
+    try {
+
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+
+      var osc = audioCtx.createOscillator();
+
+      var gain = audioCtx.createGain();
+
+      osc.type = type || "sine";
+
+      osc.frequency.value = freq;
+
+      gain.gain.value = 0.08;
+
+      osc.connect(gain);
+
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+      osc.stop(audioCtx.currentTime + duration);
+
+    } catch (e) { /* Web Audio unavailable in this environment — fail silently */ }
+
+  }
+
+  function playScanSound() { beep(880, 0.12); }
+
+  function playSuccessSound() { beep(660, 0.1); setTimeout(function () { beep(880, 0.18); }, 110); }
+
+  function playErrorSound() { beep(220, 0.25, "square"); }
+
+ 
+
+  function cartLineCount() {
+
+    var n = 0;
+
+    for (var id in state.cart) { n += state.cart[id]; }
+
+    return n;
+
+  }
+
+  function cartTotalCents() {
+
+    var total = 0;
+
+    for (var id in state.cart) {
+
+      var item = catalogItem(id);
+
+      total += item.price * state.cart[id];
+
+    }
+
+    return total;
+
+  }
+
+ 
+
+  function announce(message, variant) {
+
+    var el = $("snackbar");
+
+    el.textContent = message;
+
+    el.className = "bs-snackbar" + (variant ? " " + variant : "");
+
+    el.hidden = false;
+
+    clearTimeout(el._t);
+
+    el._t = setTimeout(function () { el.hidden = true; }, 4500);
+
+  }
+
+ 
+
+  /* ============================================================
+
+     VIEW ROUTER
+
+     ============================================================ */
+
+  var VIEW_ORDER = ["idle", "items", "payment", "success", "staff-login", "staff-admin"];
+
+  function showView(name) {
+
+    VIEW_ORDER.forEach(function (v) {
+
+      $("view-" + v).hidden = v !== name;
+
+    });
+
+    state.view = name;
+
+ 
+
+    $("cancelOrderBtn").hidden = !(name === "items" || name === "payment");
+
+    // editItemsBtn now lives inside #view-payment itself (below the Payment
+
+    // heading), so it's shown/hidden automatically with the rest of that view.
+
+    // The theme/language/help controls are for customers, not staff — hide
+
+    // the whole bar on the staff-only screens.
+
+    $("helpBar").hidden = (name === "staff-login" || name === "staff-admin");
+
+    // Cog + cart summary/checkout footer only makes sense on the Items screen.
+
+    $("itemsFooter").hidden = name !== "items";
+
+    // The staff screens are fixed in Norwegian (see applyStaffTranslations),
+
+    // so flag the document's lang attribute accordingly while on them, and
+
+    // restore the customer's chosen language on the way back out.
+
+    document.documentElement.lang = (name === "staff-login" || name === "staff-admin") ? "nb" : currentLang;
+
+ 
+
+    if (name === "items") { renderItemsGreeting(); renderCategoryChips(); renderProducts(); updateCartBar(); renderRegisteredList(); }
+
+    if (name === "payment") renderPayment();
+
+ 
+
+    // Move focus to the new view's heading for screen reader / keyboard
+
+    // users — except on the idle/splash screen, which isn't a "screen" a
+
+    // user has navigated into so much as the ambient resting state; forcing
+
+    // focus there just shows a distracting default focus outline around the
+
+    // logo before anyone has touched anything.
+
+    if (name !== "idle") {
+
+      var heading = document.querySelector("#view-" + name + " h1, #view-" + name + " .view-title");
+
+      if (heading) { heading.setAttribute("tabindex", "-1"); heading.focus(); }
+
+    }
+
+  }
+
+ 
+
+  /* ============================================================
+
+     DIALOG HELPERS (focus trap + restore)
+
+     ============================================================ */
+
+  function focusableEls(container) {
+
+    return Array.prototype.slice.call(
+
+      container.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+
+    ).filter(function (el) { return !el.disabled && el.offsetParent !== null; });
+
+  }
+
+ 
+
+  function openDialog(dialog) {
+
+    lastFocusedEl = document.activeElement;
+
+    dialog.hidden = false;
+
+    var focusables = focusableEls(dialog);
+
+    if (focusables.length) focusables[0].focus();
+
+ 
+
+    function trap(e) {
+
+      if (e.key === "Escape") { closeDialog(dialog); return; }
+
+      if (e.key !== "Tab") return;
+
+      var f = focusableEls(dialog);
+
+      if (!f.length) return;
+
+      var first = f[0], last = f[f.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+
+    }
+
+    dialog._trap = trap;
+
+    dialog.addEventListener("keydown", trap);
+
+  }
+
+ 
+
+  function closeDialog(dialog) {
+
+    dialog.hidden = true;
+
+    if (dialog._trap) dialog.removeEventListener("keydown", dialog._trap);
+
+    if (lastFocusedEl) lastFocusedEl.focus();
+
+  }
+
+ 
+
+  document.querySelectorAll(".bs-dialog-overlay").forEach(function (overlay) {
+
+    overlay.addEventListener("click", function (e) {
+
+      if (e.target === overlay) closeDialog(overlay);
+
+    });
+
+  });
+
+ 
+
+  /* ============================================================
+
+     PERSISTENT HELP BUTTON (same corner on every screen)
+
+     ============================================================ */
+
+  $("helpBtn").addEventListener("click", function () {
+
+    var toast = $("helpRequestedToast");
+
+    $("helpRequestedToastText").textContent = t("callForHelpAnnounce");
+
+    toast.hidden = false;
+
+    clearTimeout(toast._t);
+
+    toast._t = setTimeout(function () { toast.hidden = true; }, 4500);
+
+  });
+
+  $("helpRequestedToastClose").addEventListener("click", function () {
+
+    var toast = $("helpRequestedToast");
+
+    clearTimeout(toast._t);
+
+    toast.hidden = true;
+
+  });
+
+ 
+
+  /* ============================================================
+
+     IDLE -> ITEMS
+
+     Kiosk UX guideline: starting a session should feel like "barely a
+
+     step" — tapping "Touch to start" goes straight into scanning as a
+
+     guest. Logging in is optional and offered inline on the Items view
+
+     instead of gating the fast path behind its own screen.
+
+     ============================================================ */
+
+  $("startBtn").addEventListener("click", function () {
+
+    showView("items");
+
+  });
+
+ 
+
+  $("colorThemeSelect").addEventListener("change", function () { setColorTheme(this.value); });
+
+ 
+
+  /* ============================================================
+
+     FIND PRODUCTS DIALOG
+
+     Holds the category chips + product grid that used to live inline
+
+     behind the "Browse by category" disclosure.
+
+     ============================================================ */
+
+  $("findProductsBtn").addEventListener("click", function () { openDialog($("findProductsDialog")); });
+
+  $("findProductsDialogClose").addEventListener("click", function () { closeDialog($("findProductsDialog")); });
+
+ 
+
+  /* ============================================================
+
+     MANUAL BARCODE DIALOG
+
+     Lets a customer type a barcode instead of scanning it; looks it up
+
+     against CATALOG's barcode field and adds the match the same way a
+
+     real scan would.
+
+     ============================================================ */
+
+  function openManualBarcodeDialog() {
+
+    $("manualBarcodeInput").value = "";
+
+    $("manualBarcodeError").hidden = true;
+
+    $("manualBarcodeField").classList.remove("has-error");
+
+    openDialog($("manualBarcodeDialog"));
+
+  }
+
+  function submitManualBarcode() {
+
+    var code = $("manualBarcodeInput").value.trim();
+
+    var match = CATALOG.find(function (p) { return p.barcode === code; });
+
+    if (!match) {
+
+      $("manualBarcodeError").hidden = false;
+
+      $("manualBarcodeField").classList.add("has-error");
+
+      $("manualBarcodeError").focus();
+
+      return;
+
+    }
+
+    lastScannedId = match.id;
+
+    addToCart(match.id, 1);
+
+    playScanSound();
+
+    closeDialog($("manualBarcodeDialog"));
+
+  }
+
+  $("manualBarcodeBtn").addEventListener("click", openManualBarcodeDialog);
+
+  $("manualBarcodeDialogClose").addEventListener("click", function () { closeDialog($("manualBarcodeDialog")); });
+
+  $("manualBarcodeCancelBtn").addEventListener("click", function () { closeDialog($("manualBarcodeDialog")); });
+
+  $("manualBarcodeSubmitBtn").addEventListener("click", submitManualBarcode);
+
+  $("manualBarcodeInput").addEventListener("keydown", function (e) {
+
+    if (e.key === "Enter") { e.preventDefault(); submitManualBarcode(); }
+
+  });
+
+  $("manualBarcodeInput").addEventListener("input", function () {
+
+    $("manualBarcodeError").hidden = true;
+
+    $("manualBarcodeField").classList.remove("has-error");
+
+  });
+
+ 
+
+  /* ============================================================
+
+     STAFF LOGIN (full-screen, reached via the cog icon under the
+
+     registered items list)
+
+     ============================================================ */
+
+  $("staffSettingsBtn").addEventListener("click", function () {
+
+    $("staffPin").value = "";
+
+    $("staffPin").type = "password";
+
+    $("showStaffPin").checked = false;
+
+    $("staffLoginError").hidden = true;
+
+    $("staffPinField").classList.remove("has-error");
+
+    showView("staff-login");
+
+  });
+
+  $("staffLoginCancelBtn").addEventListener("click", function () { showView("items"); });
+
+  $("showStaffPin").addEventListener("change", function () {
+
+    $("staffPin").type = this.checked ? "text" : "password";
+
+  });
+
+  function submitStaffLogin() {
+
+    var pin = $("staffPin").value.trim();
+
+    // Demo-only: any 4-digit PIN is accepted, since there's no real staff
+
+    // directory behind this prototype — only the shape of the PIN matters.
+
+    if (!/^\d{4}$/.test(pin)) {
+
+      $("staffLoginError").hidden = false;
+
+      $("staffPinField").classList.add("has-error");
+
+      $("staffLoginError").focus();
+
+      return;
+
+    }
+
+    announce(tStaff("staffSignedInAnnounce"), "success");
+
+    showView("staff-admin");
+
+  }
+
+  $("staffLoginSubmitBtn").addEventListener("click", submitStaffLogin);
+
+  $("staffPin").addEventListener("keydown", function (e) {
+
+    if (e.key === "Enter") { e.preventDefault(); submitStaffLogin(); }
+
+  });
+
+  $("staffPin").addEventListener("input", function () {
+
+    $("staffLoginError").hidden = true;
+
+    $("staffPinField").classList.remove("has-error");
+
+  });
+
+ 
+
+  /* ============================================================
+
+     STAFF ADMIN ACTIONS
+
+     ============================================================ */
+
+  $("staffAdminExitBtn").addEventListener("click", function () { showView("items"); });
+
+ 
+
+  // Cancel the ongoing purchase — a staff-privileged shortcut, so unlike
+
+  // the customer-facing Cancel button it doesn't need a confirmation
+
+  // dialog first. Reuses the same reset as a normal cancelled order.
+
+  $("staffCancelPurchaseBtn").addEventListener("click", function () {
+
+    resetToIdle();
+
+  });
+
+ 
+
+  // Theme toggle mirrors the help-bar button exactly (same setTheme()
+
+  // call), just reachable from the admin screen too; its label is kept in
+
+  // sync with the current theme the same way the help-bar button's
+
+  // aria-label is (see setTheme() and setLanguage()).
+
+  $("staffThemeToggleBtn").addEventListener("click", function () {
+
+    setTheme(currentTheme === "light" ? "dark" : "light");
+
+  });
+
+ 
+
+  // Restart application — simulates powering the kiosk back on: clears
+
+  // the in-progress transaction and returns every setting (language,
+
+  // theme, order counter) to its original first-load value.
+
+  $("staffRestartBtn").addEventListener("click", function () {
+
+    resetToIdle();
+
+    state.orderCounter = DEFAULT_ORDER_COUNTER;
+
+    setLanguage(DEFAULT_LANG);
+
+    setTheme(DEFAULT_THEME);
+
+    // Staff-facing confirmation of a staff action, so stays in Norwegian
+
+    // (tStaff) even though it's shown after language has reset to default.
+
+    announce(tStaff("appRestartedAnnounce"), "success");
+
+  });
+
+ 
+
+  /* ============================================================
+
+     ITEMS VIEW
+
+     ============================================================ */
+
+  function renderItemsGreeting() {
+
+    $("itemsGreeting").textContent = t("scanPrompt");
+
+  }
+
+ 
+
+  function renderCategoryChips() {
+
+    var row = $("categoryRow");
+
+    row.innerHTML = "";
+
+    CATEGORIES.forEach(function (cat) {
+
+      var btn = document.createElement("button");
+
+      var isActive = cat === state.activeCategory;
+
+      btn.className = "bs-chip " + (isActive ? "bs-chip-primary" : "bs-chip-neutral");
+
+      // "All" is chrome text and gets translated; the specific category
+
+      // names (Timber, Fixings, …) are catalog data and stay in English.
+
+      btn.textContent = cat === "All" ? t("categoryAll") : cat;
+
+      btn.setAttribute("aria-pressed", String(isActive));
+
+      btn.addEventListener("click", function () {
+
+        state.activeCategory = cat;
+
+        renderCategoryChips();
+
+        renderProducts();
+
+      });
+
+      row.appendChild(btn);
+
+    });
+
+  }
+
+ 
+
+  // Category browsing is a secondary fallback (kept inside a closed <details>
+
+  // by default) for items that can't be scanned — not a search bar.
+
+  function filteredCatalog() {
+
+    return CATALOG.filter(function (p) {
+
+      return state.activeCategory === "All" || p.category === state.activeCategory;
+
+    });
+
+  }
+
+ 
+
+  function renderProducts() {
+
+    var grid = $("productGrid");
+
+    grid.innerHTML = "";
+
+ 
+
+    var items = filteredCatalog();
+
+    $("resultsCount").textContent = countText(items.length, "product");
+
+ 
+
+    if (!items.length) {
+
+      var empty = document.createElement("li");
+
+      empty.className = "empty-state";
+
+      empty.textContent = t("noProductsInCategory");
+
+      grid.appendChild(empty);
+
+      return;
+
+    }
+
+ 
+
+    items.forEach(function (p) {
+
+      var li = document.createElement("li");
+
+      var qty = state.cart[p.id] || 0;
+
+      var btn = document.createElement("button");
+
+      btn.className = "prod-card";
+
+      btn.setAttribute("aria-label", t("addProductAriaTemplate", { name: p.name, price: fmt(p.price) }) +
+
+        (qty ? " " + t("inCartAriaTemplate", { qty: qty }) : ""));
+
+      btn.innerHTML =
+
+        '<span class="prod-category">' + p.category + '</span>' +
+
+        '<span class="prod-name">' + p.name + '</span>' +
+
+        '<span class="prod-price">' + fmt(p.price) + '</span>' +
+
+        (qty ? '<span class="bs-badge bs-badge--numeric bs-badge--primary" aria-hidden="true">' + qty + '</span>' : "");
+
+      btn.addEventListener("click", function () {
+
+        lastScannedId = p.id;
+
+        addToCart(p.id, 1);
+
+        playScanSound();
+
+      });
+
+      li.appendChild(btn);
+
+      grid.appendChild(li);
+
+    });
+
+  }
+
+ 
+
+  function addToCart(id, delta) {
+
+    var next = (state.cart[id] || 0) + delta;
+
+    if (next <= 0) { delete state.cart[id]; } else { state.cart[id] = next; }
+
+    updateCartBar();
+
+    renderRegisteredList();
+
+    renderProducts();
+
+  }
+
+ 
+
+  function updateCartBar() {
+
+    var n = cartLineCount();
+
+    $("cartCount").textContent = countText(n, "item");
+
+    $("cartTotal").textContent = fmt(cartTotalCents());
+
+    $("registeredCount").textContent = countText(n, "item");
+
+    $("checkoutBtn").disabled = n === 0;
+
+    // Registered items, browse-by-category and the checkout bar are always
+
+    // visible on the Items screen (even at 0 items, showing an empty-state
+
+    // message in the list) so there's always a way in for a customer whose
+
+    // first item can't be scanned, and the wide-screen two-column layout is
+
+    // in place from the very first moment the screen is shown.
+
+  }
+
+ 
+
+  // Registered items list — always visible on the Items screen. Every scan
+
+  // (or manual add) appends/updates a line here immediately, per the kiosk
+
+  // guideline that every action needs immediate visual confirmation.
+
+  // Simulates a hand-scanner read: picks a random catalog item and adds it,
+
+  // with the same sound + announcement as scanning a product in "Browse by
+
+  // category". Triggered by tapping the empty registered-items area.
+
+  function simulateScan() {
+
+    var pick = CATALOG[Math.floor(Math.random() * CATALOG.length)];
+
+    lastScannedId = pick.id;
+
+    addToCart(pick.id, 1);
+
+    playScanSound();
+
+  }
+
+ 
+
+  function renderRegisteredList() {
+
+    var wrap = $("registeredList");
+
+    wrap.innerHTML = "";
+
+    var ids = Object.keys(state.cart);
+
+    if (!ids.length) {
+
+      wrap.innerHTML = '<li class="cart-empty-item"><p class="cart-empty">' + t("emptyRegisteredList") + '</p></li>';
+
+      return;
+
+    }
+
+    ids.forEach(function (id) {
+
+      var item = catalogItem(id);
+
+      var qty = state.cart[id];
+
+      var line = document.createElement("li");
+
+      line.className = "cart-line" + (id === lastScannedId ? " flash-added" : "");
+
+      line.innerHTML =
+
+        '<div class="cart-line-info"><span class="cart-line-name">' + item.name + '</span>' +
+
+        '<span class="cart-line-unit">' + fmt(item.price) + ' ' + t("each") + '</span></div>' +
+
+        '<div class="qty-stepper">' +
+
+        '<button class="qty-btn" aria-label="' + t("decreaseQtyAriaTemplate", { name: item.name }) + '" data-id="' + id + '" data-delta="-1">−</button>' +
+
+        '<span class="qty-value" aria-live="polite">' + qty + '</span>' +
+
+        '<button class="qty-btn" aria-label="' + t("increaseQtyAriaTemplate", { name: item.name }) + '" data-id="' + id + '" data-delta="1">+</button>' +
+
+        '</div>' +
+
+        '<div class="cart-line-total">' + fmt(item.price * qty) + '</div>' +
+
+        '<button class="remove-btn" data-id="' + id + '" data-remove="1" aria-label="' + t("removeAriaTemplate", { name: item.name }) + '"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>';
+
+      wrap.appendChild(line);
+
+    });
+
+    lastScannedId = null;
+
+ 
+
+    wrap.querySelectorAll("[data-delta]").forEach(function (btn) {
+
+      btn.addEventListener("click", function () {
+
+        addToCart(this.getAttribute("data-id"), parseInt(this.getAttribute("data-delta"), 10));
+
+      });
+
+    });
+
+    wrap.querySelectorAll("[data-remove]").forEach(function (btn) {
+
+      btn.addEventListener("click", function () {
+
+        var id = this.getAttribute("data-id");
+
+        var item = catalogItem(id);
+
+        delete state.cart[id];
+
+        updateCartBar();
+
+        renderRegisteredList();
+
+        renderProducts();
+
+        announce(t("removedAnnounceTemplate", { name: item.name }));
+
+      });
+
+    });
+
+  }
+
+ 
+
+  // Prototyping convenience: tapping anywhere on the items-footer (not on
+
+  // the cog or Checkout buttons) simulates scanning another item, regardless
+
+  // of whether the registered-items list is empty or already has items.
+
+  $("itemsFooter").addEventListener("click", function (e) {
+
+    if (e.target.closest("button")) return; // don't swallow the cog/Checkout buttons' own clicks
+
+    simulateScan();
+
+  });
+
+ 
+
+  $("checkoutBtn").addEventListener("click", function () { if (!this.disabled) showView("payment"); });
+
+ 
+
+  /* ============================================================
+
+     PAYMENT VIEW
+
+     ============================================================ */
+
+  function renderPayment() {
+
+    // resetPayButton() must run first: it rebuilds payBtn's innerHTML
+
+    // (including the #payAmount span), which the processing-state spinner
+
+    // markup replaces while a payment is in flight. Reading/writing
+
+    // #payAmount before that rebuild throws if the previous payment never
+
+    // got a chance to restore it (e.g. a successful payment, which jumps
+
+    // straight to the Success view instead).
+
+    resetPayButton();
+
+    var total = cartTotalCents();
+
+    $("summaryTotal").textContent = fmt(total);
+
+    $("paymentError").hidden = true;
+
+    $("paymentTerminalHint").hidden = true;
+
+  }
+
+ 
+
+  $("editItemsBtn").addEventListener("click", function () { showView("items"); });
+
+ 
+
+  function resetPayButton() {
+
+    var btn = $("payBtn");
+
+    btn.disabled = false;
+
+    btn.innerHTML = t("payWord") + ' <span id="payAmount">' + fmt(cartTotalCents()) + '</span>';
+
+    $("paymentTerminalHint").hidden = true;
+
+  }
+
+ 
+
+  $("payBtn").addEventListener("click", function () {
+
+    var btn = this;
+
+    var decline = $("simulateDecline").checked;
+
+    var methodEl = document.querySelector('input[name="paymethod"]:checked');
+
+    var isCard = !methodEl || methodEl.value === "card";
+
+    // Card (tap/chip) waits on the physical terminal, so its simulated
+
+    // processing delay is longer than mobile pay's near-instant confirm.
+
+    var delay = isCard ? 5000 : 1600;
+
+    btn.disabled = true;
+
+    btn.innerHTML = '<span class="processing"><span class="spinner" aria-hidden="true"></span> ' + t("processingPaymentLabel") + '</span>';
+
+    $("paymentTerminalHint").hidden = false;
+
+    $("paymentError").hidden = true;
+
+ 
+
+    setTimeout(function () {
+
+      if (decline) {
+
+        $("simulateDecline").checked = false;
+
+        $("paymentError").hidden = false;
+
+        $("paymentError").textContent = t("paymentDeclinedError");
+
+        $("paymentError").focus();
+
+        playErrorSound();
+
+        announce(t("paymentDeclinedAnnounce"), "error");
+
+        resetPayButton();
+
+      } else {
+
+        completeOrder();
+
+      }
+
+    }, delay);
+
+  });
+
+ 
+
+  function completeOrder() {
+
+    state.orderCounter += 1;
+
+    state.cart = {};
+
+    updateCartBar();
+
+    resetPayButton(); // restore payBtn's normal markup now, not just on next renderPayment()
+
+    showView("success");
+
+    playSuccessSound();
+
+    startSuccessCountdown();
+
+  }
+
+ 
+
+  /* ============================================================
+
+     SUCCESS VIEW
+
+     ============================================================ */
+
+  function startSuccessCountdown() {
+
+    countdownSeconds = 5;
+
+    clearInterval(successTimer);
+
+    successTimer = setInterval(function () {
+
+      countdownSeconds -= 1;
+
+      if (countdownSeconds <= 0) { clearInterval(successTimer); resetToIdle(); }
+
+    }, 1000);
+
+    $("view-success").addEventListener("click", resetCountdown);
+
+    $("view-success").addEventListener("keydown", resetCountdown);
+
+  }
+
+  function resetCountdown() { countdownSeconds = 5; }
+
+ 
+
+  function resetToIdle() {
+
+    clearInterval(successTimer);
+
+    clearInterval(presenceCountdownTimer);
+
+    state.cart = {};
+
+    state.activeCategory = "All";
+
+    $("simulateDecline").checked = false;
+
+    $("paymentTerminalHint").hidden = true;
+
+    $("helpRequestedToast").hidden = true;
+
+    if ($("findProductsDialog")) $("findProductsDialog").hidden = true;
+
+    if ($("manualBarcodeDialog")) $("manualBarcodeDialog").hidden = true;
+
+    showView("idle");
+
+  }
+
+ 
+
+  /* ============================================================
+
+     CANCEL ORDER
+
+     ============================================================ */
+
+  $("cancelOrderBtn").addEventListener("click", function () {
+
+    if (cartLineCount() > 0) { openDialog($("cancelDialog")); }
+
+    else { resetToIdle(); }
+
+  });
+
+  $("cancelDialogBack").addEventListener("click", function () { closeDialog($("cancelDialog")); });
+
+  $("cancelDialogConfirm").addEventListener("click", function () {
+
+    closeDialog($("cancelDialog"));
+
+    resetToIdle();
+
+  });
+
+ 
+
+  /* ============================================================
+
+     PRESENCE / INACTIVITY DETECTION
+
+     Kiosk UX guideline: always include auto log-out / presence detection
+
+     to reset a session between users after a period of inactivity.
+
+     ============================================================ */
+
+  var INACTIVITY_WARN_MS = 45000;   // warn after 45s of no interaction
+
+  var INACTIVITY_RESET_MS = 15000;  // then reset this many seconds later
+
+  var lastActivity = Date.now();
+
+  var presenceCountdownTimer = null;
+
+  var presenceSecondsLeft = 0;
+
+  function renderPresenceText() {
+
+    $("presenceDialogBody").textContent = t("sessionEndTemplate", { s: presenceSecondsLeft });
+
+  }
+
+ 
+
+  function markActivity() {
+
+    lastActivity = Date.now();
+
+  }
+
+  ["click", "keydown", "touchstart"].forEach(function (evt) {
+
+    document.addEventListener(evt, markActivity, true);
+
+  });
+
+ 
+
+  setInterval(function () {
+
+    if (state.view === "idle" || state.view === "success") return; // nothing to time out from / has its own countdown
+
+    if (!$("presenceDialog").hidden) return;                        // already warning
+
+    if (!$("cancelDialog").hidden) return;                           // don't interrupt another dialog
+
+    if (Date.now() - lastActivity > INACTIVITY_WARN_MS) openPresenceWarning();
+
+  }, 1000);
+
+ 
+
+  function openPresenceWarning() {
+
+    presenceSecondsLeft = Math.ceil(INACTIVITY_RESET_MS / 1000);
+
+    renderPresenceText();
+
+    openDialog($("presenceDialog"));
+
+    clearInterval(presenceCountdownTimer);
+
+    presenceCountdownTimer = setInterval(function () {
+
+      presenceSecondsLeft -= 1;
+
+      renderPresenceText();
+
+      if (presenceSecondsLeft <= 0) {
+
+        clearInterval(presenceCountdownTimer);
+
+        closeDialog($("presenceDialog"));
+
+        announce(t("sessionEndedAnnounce"));
+
+        resetToIdle();
+
+      }
+
+    }, 1000);
+
+  }
+
+ 
+
+  $("presenceContinueBtn").addEventListener("click", function () {
+
+    clearInterval(presenceCountdownTimer);
+
+    closeDialog($("presenceDialog"));
+
+    markActivity();
+
+  });
+
+ 
+
+  /* ============================================================
+
+     LANGUAGE SWITCHER (top-left corner, every screen — see .help-bar)
+
+     ============================================================ */
+
+  function applyTranslations() {
+
+    document.documentElement.lang = currentLang;
+
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+
+      // Staff-only screens (login + admin) are fixed in Norwegian regardless
+
+      // of the customer-facing language — see applyStaffTranslations().
+
+      if (el.closest(".staff-i18n-scope")) return;
+
+      el.textContent = t(el.getAttribute("data-i18n"));
+
+    });
+
+    document.querySelectorAll("[data-i18n-aria-label]").forEach(function (el) {
+
+      if (el.closest(".staff-i18n-scope")) return;
+
+      el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria-label")));
+
+    });
+
+ 
+
+    // Re-run whichever dynamic renderers apply to the current view/state so
+
+    // already-generated content (counts, greetings, dialogs, countdowns)
+
+    // picks up the new language immediately, without losing state.
+
+    if (state.view === "items") {
+
+      renderItemsGreeting();
+
+      renderCategoryChips();
+
+      renderProducts();
+
+      updateCartBar();
+
+      renderRegisteredList();
+
+    }
+
+    if (state.view === "payment") renderPayment();
+
+    if (!$("presenceDialog").hidden) renderPresenceText();
+
+  }
+
+ 
+
+  // Staff-only UI (the cog button, staff login screen, staff admin screen)
+
+  // always renders in Norwegian, independent of whatever language the
+
+  // customer has selected via the help-bar — staff are a fixed internal
+
+  // audience, not a customer-facing concern the language switcher covers.
+
+  // Run once at init; nothing in here ever changes afterward.
+
+  function applyStaffTranslations() {
+
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+
+      if (!el.closest(".staff-i18n-scope")) return;
+
+      el.textContent = tStaff(el.getAttribute("data-i18n"));
+
+    });
+
+    document.querySelectorAll("[data-i18n-aria-label]").forEach(function (el) {
+
+      if (!el.closest(".staff-i18n-scope")) return;
+
+      el.setAttribute("aria-label", tStaff(el.getAttribute("data-i18n-aria-label")));
+
+    });
+
+  }
+
+ 
+
+  function setLanguage(lang) {
+
+    currentLang = STRINGS[lang] ? lang : "en";
+
+    $("langSelect").value = currentLang;
+
+    applyTranslations();
+
+    // The theme controls' label/aria-label depend on which theme is
+
+    // currently active, so they can't be driven by the generic data-i18n /
+
+    // data-i18n-aria-label sweep above (which only knows a fixed key per
+
+    // element) — refresh them explicitly instead, in the new language.
+
+    if (typeof refreshThemeControls === "function") refreshThemeControls();
+
+  }
+
+ 
+
+  $("langSelect").addEventListener("change", function () { setLanguage(this.value); });
+
+ 
+
+  /* ============================================================
+
+     LIGHT / DARK THEME TOGGLE
+
+     Kept entirely separate from the idle screen's blue/red color
+
+     presets above: this swaps the shared surface/border/text tokens
+
+     for every screen, while the idle preset only ever supplies its
+
+     brand accent + (now theme-aware) background tint.
+
+     ============================================================ */
+
+  var currentTheme = "dark";
+
+  // Theme switching is a staff-only action (no customer-facing control for
+
+  // it), reached from the Staff settings screen — see staffThemeToggleBtn's
+
+  // wiring further down. Updates that button's label so it never goes
+
+  // stale after a language change.
+
+  function refreshThemeControls() {
+
+    var nextThemeKey = currentTheme === "light" ? "switchToDarkMode" : "switchToLightMode";
+
+    // staffThemeToggleBtn lives on the staff admin screen, so its label is
+
+    // always Norwegian (tStaff), independent of the customer's language.
+
+    $("staffThemeToggleBtn").textContent = tStaff(nextThemeKey);
+
+  }
+
+  function setTheme(theme) {
+
+    currentTheme = theme === "light" ? "light" : "dark";
+
+    document.documentElement.setAttribute("data-theme", currentTheme);
+
+    refreshThemeControls();
+
+    // Re-apply the idle preset so its background tint picks the
+
+    // light/dark variant that matches the new theme.
+
+    applyIdleScreenTheme(ACTIVE_IDLE_SCREEN);
+
+  }
+
+ 
+
+  /* ============================================================
+
+     INIT
+
+     ============================================================ */
+
+  applyStaffTranslations();
+
+  setColorTheme(DEFAULT_COLOR_THEME);
+
+  setTheme(DEFAULT_THEME);
+
+  setLanguage(DEFAULT_LANG);
+
+  showView("idle");
+
+})();
+
+</script>
+
+</body>
+
+</html>
